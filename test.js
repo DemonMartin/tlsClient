@@ -22,7 +22,9 @@ const runInnerRequests = async (tlsClient) => {
 const runRequests = async () => {
     const start = performance.now();
     const promises = Array(100).fill().map(async () => {
-        const tlsClient = new TlsClient();
+        const tlsClient = new TlsClient({
+            tlsClientIdentifier: "chrome_120"
+        });
         const responseTimes = await runInnerRequests(tlsClient);
         console.log(await tlsClient.terminate());
         return responseTimes;
@@ -149,6 +151,6 @@ async function fetchCookiesAndAddCookies() {
     //await oneRequest();
     //await oneAxiosRequest();
     //await defineAndGo();
-    await fetchCookiesAndAddCookies()
+    //await fetchCookiesAndAddCookies()
 })();
 

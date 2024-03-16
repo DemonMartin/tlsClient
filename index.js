@@ -58,6 +58,24 @@ class TlsClient {
         }
     }
 
+    /**
+     * @description Set the default cookies for the TlsClient
+     * @param {import('./typedefs.js').Cookie[]} cookies 
+     * @returns 
+     */
+    setDefaultCookies(cookies) {
+        this.defaultOptions.defaultCookies = cookies;
+    }
+
+    /**
+     * @description Set the default headers for the TlsClient
+     * @param {import('./typedefs.js').Headers} headers
+     * @returns
+     */
+    setDefaultHeaders(headers) {
+        this.defaultOptions.defaultHeaders = headers;
+    }
+
     #combineOptions(options) {
         const defaultHeaders = this.defaultOptions.defaultHeaders || {};
         const headers = {
