@@ -1,10 +1,10 @@
-# TlsClient
+# TlsClientWrapper
 A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
 
 # Installation
 With npm: 
 ```bash
-npm install tlsclient
+npm install tlsclientwrapper
 ```
 
 # Information
@@ -18,7 +18,7 @@ This module, compared to bogdanfinn's example, offers:
 # Usage
 ### Simple Get Request:
 ```js
-import tlsClient from 'tlsClient';
+import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient();
 
 console.log(await client.get("https://example.com/"));
@@ -26,7 +26,7 @@ console.log(await client.get("https://example.com/"));
 
 ### Default Headers/Cookies for all Requests:
 ```js
-import tlsClient from 'tlsClient';
+import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient({
     defaultHeaders: {
         "Custom-Header": "Custom-Value",
@@ -49,7 +49,7 @@ console.log(await client.get("https://myhttpheader.com/"));
 ### TLS Request
 *Don't worry, all requests by default are sent imitating chrome_120 TLS*
 ```js
-import tlsClient from 'tlsClient';
+import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient({
     tlsClientIdentifier: "chrome_120" // For alternatives, check the docs or the JSDocs
 });
