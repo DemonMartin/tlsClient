@@ -7,12 +7,42 @@
   },
   "description": "A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by @dryft/tlsclient",
   "type": "module",
-  "keywords": [],
   "author": "DemonMartin",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.8",
     "ffi-rs": "^1.0.50",
     "workerpool": "^9.1.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DemonMartin/tlsClient.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DemonMartin/tlsClient/issues"
+  },
+  "homepage": "https://github.com/DemonMartin/tlsClient#readme",
+  "keywords": [
+    "tls",
+    "client",
+    "https",
+    "http",
+    "request",
+    "get",
+    "post",
+    "put",
+    "delete",
+    "patch",
+    "head",
+    "options",
+    "trace",
+    "connect",
+    "tlsclient",
+    "tls-client",
+    "tls_client",
+    "requests",
+    "httprequests",
+    "client",
+    "fingerprints"
+  ]
 }
