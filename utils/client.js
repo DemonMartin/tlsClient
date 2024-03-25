@@ -133,14 +133,14 @@ class Client {
 
     startWorkerPool() {
         return workerpool.pool(path.join(__dirname, 'client.js'), {
-    });
+        });
     }
 }
 
 export default Client;
 
 // For the workerpool to work, you need to run the following code
-const client = new Client();
 if (!workerpool.isMainThread) {
+    const client = new Client();
     client.startWorker();
 }
