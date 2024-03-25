@@ -115,7 +115,11 @@ class TlsClient {
      * @description Terminate the TlsClient WorkerPool
      */
     terminate() {
-        return this.pool.terminate();
+        try {
+            return this.pool?.terminate?.();
+        } catch (error) {
+            return undefined;
+        }
     }
 
     /**
