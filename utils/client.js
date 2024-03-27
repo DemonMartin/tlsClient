@@ -14,21 +14,27 @@ class Client {
     // static workerpool = workerpool.pool(path.join(__dirname, 'client.js'), {
     // });
 
-    constructor() {
+    constructor(customPath = null) {
         this.tlsDependency = new TlsDependency();
         this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath();
+        this.TLS_LIB_PATH = customPath ?? this.tlsDependencyPath?.TLS_LIB_PATH;
+        this.customPath = customPath ? true : false;
     }
 
     libraryExists() {
-        return fs.existsSync(path.join(this.tlsDependencyPath.TLS_LIB_PATH));
+        return fs.existsSync(path.join(this.TLS_LIB_PATH));
     }
 
     async downloadLibrary() {
         if (this.libraryExists()) return;
+        if (this.customPath) {
+            throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
+        }
+
 
         console.log('[tlsClient] Detected missing TLS library')
         console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
-        console.log('[tlsClient] DestinationPath: ' + this.tlsDependencyPath.TLS_LIB_PATH);
+        console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
         console.log('[tlsClient] Downloading TLS library... This may take a while');
 
         const response = await axios({
@@ -37,7 +43,7 @@ class Client {
             responseType: 'stream'
         });
 
-        const writer = fs.createWriteStream(this.tlsDependencyPath.TLS_LIB_PATH);
+        const writer = fs.createWriteStream(this.TLS_LIB_PATH);
 
         response.data.pipe(writer);
 
@@ -55,7 +61,7 @@ class Client {
 
         ffiRs.open({
             library: 'tls',
-            path: this.tlsDependencyPath.TLS_LIB_PATH,
+            path: this.TLS_LIB_PATH,
         })
     }
 

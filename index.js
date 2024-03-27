@@ -48,7 +48,7 @@ class TlsClient {
         };
 
         this.sessionId = crypto.randomUUID();
-        this.client = new Client();
+        this.client = new Client(options?.customLibraryPath ?? undefined);
     }
 
     async #init() {

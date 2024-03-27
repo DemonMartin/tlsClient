@@ -58,11 +58,15 @@ console.log(await client.get("https://tls.peet.ws/api/all"));
 ```
 > For more Identifiers, check here: https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles
 
+> ⚠️ Warning ⚠️
+> All the JSDocs are currently based on the TLSClient Version 1.7.2, if you're using a custom LibraryPath it will not update the JSDocs.
+
 ### Constructor Options
 ```js
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_120'] - Identifier of the TLS client
+ * @property {string|null} [customLibraryPath=null] - Path to the custom library
  * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
  * @property {boolean} [catchPanics=false] - If true, panics will be caught
  * @property {certificatePinningHosts|null} [certificatePinningHosts=null] - Hosts for certificate pinning

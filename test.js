@@ -1,6 +1,8 @@
 import TlsDependency from "./utils/path.js";
 import TlsClient from "./index.js";
 import axios from "axios";
+import path from "path";
+
 const tlsDependency = new TlsDependency();
 const tlsDependencyPath = tlsDependency.getTLSDependencyPath();
 console.log(tlsDependencyPath);
@@ -145,6 +147,15 @@ async function fetchCookiesAndAddCookies() {
 
 }
 
+async function customLibraryFetch() {
+    const tlsClient = new TlsClient({
+        customLibraryPath: path.join(String.raw`C:\Users\skubi\Downloads\tls-client-windows-64-v1.7.2.dll`)
+    });
+    const response = await tlsClient.get("https://share.martin.tools/");
+    console.log(response);
+    console.log(await tlsClient.terminate());
+}
+
 (async () => {
     //await axiosTest();
     //await runRequests();
@@ -152,5 +163,6 @@ async function fetchCookiesAndAddCookies() {
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
+    await customLibraryFetch();
 })();
 
