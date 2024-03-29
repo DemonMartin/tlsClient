@@ -158,13 +158,23 @@ async function customLibraryFetch() {
     console.log(await tlsClient.terminate());
 }
 
+async function customLibraryDownloadPath() {
+    const tlsClient = new TlsClient({
+        customLibraryDownloadPath: path.join(String.raw`C:\Users\skubi\Desktop\Folder\GitHub`),
+    });
+    const response = await tlsClient.get("https://share.martin.tools/");
+    console.log(response);
+    console.log(await tlsClient.terminate());
+}
+
 (async () => {
     //await axiosTest();
     //await runRequests();
-    await oneRequest();
+    //await oneRequest();
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
     //await customLibraryFetch();
+    //await customLibraryDownloadPath();
 })();
 
