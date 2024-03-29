@@ -19,6 +19,7 @@ class TlsClient {
             catchPanics: false,
             certificatePinningHosts: null,
             customTlsClient: null,
+            customLibraryPath: null,
             transportOptions: null,
             followRedirects: false,
             forceHttp1: false,
@@ -47,11 +48,12 @@ class TlsClient {
             retryIsEnabled: true,
             retryMaxCount: 3,
             retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
+            customLibraryDownloadPath: null,
             ...options
         };
 
         this.sessionId = crypto.randomUUID();
-        this.client = new Client(options?.customLibraryPath ?? undefined);
+        this.client = new Client(options);
     }
 
     async #init() {

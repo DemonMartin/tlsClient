@@ -14,11 +14,11 @@ class Client {
     // static workerpool = workerpool.pool(path.join(__dirname, 'client.js'), {
     // });
 
-    constructor(customPath = null) {
+    constructor(options) {
+        this.customPath = options?.customLibraryPath ? true : false;
         this.tlsDependency = new TlsDependency();
-        this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath();
-        this.TLS_LIB_PATH = customPath ?? this.tlsDependencyPath?.TLS_LIB_PATH;
-        this.customPath = customPath ? true : false;
+        this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath(options?.customLibraryDownloadPath);
+        this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
     }
 
     libraryExists() {

@@ -61,10 +61,10 @@ class TlsDependency {
      * @description Get the TLS dependency path and download url based on the platform 
      * @returns {TlsDependencyPath} An object with the download path and the destination path
      */
-    getTLSDependencyPath() {
+    getTLSDependencyPath(customPath = null) {
         let _filename = `${this.filename}-${this.distribution}-v${this.version}.${this.extension}`;
         const url = new URL(`https://github.com/bogdanfinn/tls-client/releases/download/v${this.version}/${_filename}`);
-        const destination = path.join(os.tmpdir(), _filename);
+        const destination = path.join((customPath ?? os.tmpdir()), _filename);
 
         return {
             DOWNLOAD_PATH: url.href,
