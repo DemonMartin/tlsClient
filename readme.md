@@ -58,6 +58,7 @@ const client = new tlsClient({
 
 console.log(await client.get("https://tls.peet.ws/api/all"));
 ```
+> For more Identifiers, check here: https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles
 
 ### Custom Library
 ```js
@@ -68,9 +69,8 @@ const client = new tlsClient({
     //customLibraryDownloadPath: path.join(process.cwd(), 'lib') -> Can also be set if wanted, else os.temp or process.cwd is used.
 });
 
-console.log(await client.get("https://tls.peet.ws/api/all"));
+console.log(await client.get("https://example.com/"));
 ```
-> For more Identifiers, check here: https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles
 
 > ⚠️ Warning ⚠️
 > All the JSDocs are currently based on the TLSClient Version 1.7.2, if you're using a custom LibraryPath it will not update the JSDocs.
@@ -80,8 +80,12 @@ console.log(await client.get("https://tls.peet.ws/api/all"));
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_120'] - Identifier of the TLS client
- * @property {string|null} [customLibraryPath=null] - Path to the custom library
  * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
+ * @property {string|null} [customLibraryPath=null] - Path to the custom library file
+ * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
+ * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
+ * @property {number} [retryMaxCount=3] - Maximum number of retries
+ * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
  * @property {boolean} [catchPanics=false] - If true, panics will be caught
  * @property {certificatePinningHosts|null} [certificatePinningHosts=null] - Hosts for certificate pinning
  * @property {CustomTLSClient|null} [customTlsClient=null] - Custom TLS client
@@ -145,7 +149,11 @@ console.log(await client.get("https://tls.peet.ws/api/all"));
  * @property {boolean} withDefaultCookieJar - If true, the default cookie jar is used
  * @property {boolean} withoutCookieJar - If true, the cookie jar is not used
  * @property {boolean} withRandomTLSExtensionOrder - If true, the order of TLS extensions is randomized
- */
+ * Custom configurable options for the TLS client
+ * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
+ * @property {number} [retryMaxCount=3] - Maximum number of retries
+ * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
+*/
 ```
 
 ### TlsClientReponse
