@@ -9,11 +9,13 @@ npm install tlsclientwrapper
 
 # Information
 This module, compared to bogdanfinn's example, offers:
-1. Updated JSDocs for faster coding.
+1. Advanced JSDocs for faster development.
 2. Use of the more updated ffi-rs.
 3. Automatic conversations, session support, etc.
 4. Default settings compatible with bogdafinn's client.
-5. Many more enhancements!
+5. Built-in automatic retries on specific status codes.
+6. Automatic download of the required library file.
+7. Many more enhancements!
 
 # Usage
 ### Simple Get Request:
@@ -52,6 +54,18 @@ console.log(await client.get("https://myhttpheader.com/"));
 import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient({
     tlsClientIdentifier: "chrome_120" // For alternatives, check the docs or the JSDocs
+});
+
+console.log(await client.get("https://tls.peet.ws/api/all"));
+```
+
+### Custom Library
+```js
+import tlsClient from 'tlsclientwrapper';
+import path from 'node:path';
+const client = new tlsClient({
+    customLibraryPath: path.join(process.cwd(), 'lib', 'customLib.dll') // Path must be complete
+    //customLibraryDownloadPath: path.join(process.cwd(), 'lib') -> Can also be set if wanted, else os.temp or process.cwd is used.
 });
 
 console.log(await client.get("https://tls.peet.ws/api/all"));

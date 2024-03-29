@@ -82,8 +82,8 @@
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_120'] - Identifier of the TLS client
  * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
- * @property {string|null} [customLibraryPath=null] - Path to the custom library
- * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download
+ * @property {string|null} [customLibraryPath=null] - Path to the custom library file
+ * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
  * @property {number} [retryMaxCount=3] - Maximum number of retries
  * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
