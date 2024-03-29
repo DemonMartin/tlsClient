@@ -83,6 +83,9 @@
  * @property {ClientProfile} [tlsClientIdentifier='chrome_120'] - Identifier of the TLS client
  * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
  * @property {string|null} [customLibraryPath=null] - Path to the custom library
+ * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
+ * @property {number} [retryMaxCount=3] - Maximum number of retries
+ * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
  * @property {boolean} [catchPanics=false] - If true, panics will be caught
  * @property {certificatePinningHosts|null} [certificatePinningHosts=null] - Hosts for certificate pinning
  * @property {CustomTLSClient|null} [customTlsClient=null] - Custom TLS client
@@ -143,7 +146,11 @@
  * @property {boolean} withDefaultCookieJar - If true, the default cookie jar is used
  * @property {boolean} withoutCookieJar - If true, the cookie jar is not used
  * @property {boolean} withRandomTLSExtensionOrder - If true, the order of TLS extensions is randomized
- */
+ * Custom configurable options for the TLS client
+ * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
+ * @property {number} [retryMaxCount=3] - Maximum number of retries
+ * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
+*/
 
 /**
  * @typedef {Object} TlsClientResponse

@@ -44,6 +44,9 @@ class TlsClient {
             withDefaultCookieJar: true,
             withoutCookieJar: false,
             withRandomTLSExtensionOrder: true,
+            retryIsEnabled: true,
+            retryMaxCount: 3,
+            retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
             ...options
         };
 
@@ -151,19 +154,29 @@ class TlsClient {
         return await this.pool.exec('freeMemory', [id]);
     }
 
+    async sendRequest(options) {
+        return JSON.parse(await this.pool.exec('request', [JSON.stringify(options)]));
+    }
+
+    async #retryRequest(response, options, retryCount = 0) {
+        if (options.retryIsEnabled && options.retryMaxCount > retryCount && options.retryStatusCodes.includes(response.status)) {
+            return this.#retryRequest(await this.sendRequest(options), options, retryCount + 1);
+        }
+
+        return response;
+    }
+
     async #request(options) {
         await this.#init();
 
         const combinedOptions = this.#combineOptions(options);
-
-        const request = await this.pool.exec('request', [JSON.stringify(combinedOptions)]);
-        const response = JSON.parse(request);
-        await this.#freeMemory(response.id);
+        const request = await this.#retryRequest(await this.sendRequest(combinedOptions), combinedOptions, 0);
+        await this.#freeMemory(request.id);
 
         // Remove the id from the response | Useless for user
-        delete response.id;
+        delete request.id;
 
-        return response;
+        return request;
     }
 
     /**

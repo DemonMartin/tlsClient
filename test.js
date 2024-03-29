@@ -93,7 +93,9 @@ async function axiosTest() {
 async function oneRequest() {
     const tlsClient = new TlsClient();
     const start = performance.now();
-    const response = await tlsClient.get("https://share.martin.tools/");
+    const response = await tlsClient.get("https://httpbin.org/status/408", {
+        withDebug: true
+    });
     const end = performance.now();
     console.log(response)
     console.log(`Total time: ${end - start} ms`);
@@ -159,10 +161,10 @@ async function customLibraryFetch() {
 (async () => {
     //await axiosTest();
     //await runRequests();
-    //await oneRequest();
+    await oneRequest();
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
-    await customLibraryFetch();
+    //await customLibraryFetch();
 })();
 
