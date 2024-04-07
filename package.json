@@ -1,7 +1,7 @@
 {
   "name": "tlsclientwrapper",
   "version": "1.0.2",
-  "main": "index.js",
+  "main": "index.cjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup --config"
@@ -18,9 +18,10 @@
     "workerpool": "^9.1.1"
   },
   "exports": {
-    "import": "./index.js",
-    "require": "./index.cjs",
-    "default": "./index.js"
+    ".": {
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
   },
   "repository": {
     "type": "git",
