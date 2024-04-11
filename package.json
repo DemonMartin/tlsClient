@@ -1,18 +1,27 @@
 {
   "name": "tlsclientwrapper",
   "version": "1.0.2",
-  "main": "index.js",
+  "main": "index.cjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup --config"
   },
   "description": "A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by @dryft/tlsclient",
   "type": "module",
   "author": "DemonMartin",
   "license": "ISC",
   "dependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
     "axios": "^1.6.8",
-    "ffi-rs": "^1.0.50",
-    "workerpool": "^9.1.0"
+    "ffi-rs": "^1.0.54",
+    "rollup": "^4.14.1",
+    "workerpool": "^9.1.1"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
   },
   "repository": {
     "type": "git",
@@ -44,6 +53,5 @@
     "httprequests",
     "client",
     "fingerprints"
-  ],
-  "devDependencies": {}
+  ]
 }
