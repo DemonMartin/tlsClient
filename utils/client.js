@@ -138,12 +138,9 @@ class Client {
     }
 
     startWorkerPool() {
-    const clientPath = __dirname.includes('utils') 
-        ? path.join(__dirname, 'client.js') 
-        : path.join(__dirname, 'utils', 'client.js');
-
-    return workerpool.pool(clientPath, {});
-}
+        return workerpool.pool(path.join(__dirname, 'client.js'), {
+        });
+    }
 }
 
 export default Client;

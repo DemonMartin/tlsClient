@@ -94,7 +94,7 @@ async function oneRequest() {
     const tlsClient = new TlsClient();
     const start = performance.now();
     const response = await tlsClient.get("https://httpbin.org/status/408", {
-        withDebug: false
+        withDebug: true
     });
     const end = performance.now();
     console.log(response)
@@ -170,7 +170,7 @@ async function customLibraryDownloadPath() {
 (async () => {
     //await axiosTest();
     //await runRequests();
-    await oneRequest();
+    //await oneRequest();
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()

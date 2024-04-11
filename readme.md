@@ -17,22 +17,10 @@ This module, compared to bogdanfinn's example, offers:
 6. Automatic download of the required library file.
 7. Many more enhancements!
 
-# Importing
-tlsClient supports both CJS and ESM!
-```js
-import tlsClient from 'tlsclientwrapper';
-```
-
-```js
-const tlsClient = require('tlsclientwrapper');
-```
-
 # Usage
 ### Simple Get Request:
 ```js
-// for cjs, do const tlsClient = require('tlsclientwrapper');
-import tlsClient from 'tlsclientwrapper'; 
-
+import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient();
 
 console.log(await client.get("https://example.com/"));
