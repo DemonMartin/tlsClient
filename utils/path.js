@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { URL } from "node:url";
 
 class TlsDependency {
@@ -33,20 +34,30 @@ class TlsDependency {
         }
     }
 
-    setLinuxDistribution() {
-        let releaseDetails = fs.readFileSync("/etc/os-release", "utf8");
-        const lines = releaseDetails.split("\n");
-        const release = {};
-        lines.forEach((line, _) => {
-            const words = line.split("=");
-            release[words[0].trim().toLowerCase()] = words[1].trim();
-        });
 
-        if (release.id_like.toLowerCase().includes("ubuntu") || release.id.toLowerCase().includes("ubuntu")) {
-            this.distribution = "ubuntu-amd64";
-        } else if (release.id.toLowerCase().includes("alpine")) {
-            this.distribution = `alpine-amd64`;
+
+    setLinuxDistribution() {
+        let osType = os.type().toLowerCase();
+
+        if (osType.includes("linux")) {
+            let distro;
+            try {
+                distro = execSync('lsb_release -a').toString();
+            } catch (error) {
+                console.log("Unable to determine Linux distribution. Defaulting to specific distribution.");
+                this.distribution = this.arch == "arm64" ? this.arch : "armv7";
+                return;
+            }
+
+            if (distro.toLowerCase().includes("ubuntu")) {
+                this.distribution = "ubuntu-amd64";
+            } else if (distro.toLowerCase().includes("alpine")) {
+                this.distribution = `alpine-amd64`;
+            } else {
+                this.distribution = this.arch == "arm64" ? this.arch : "armv7";
+            }
         } else {
+            console.log("Unsupported OS type. Defaulting to specific distribution.");
             this.distribution = this.arch == "arm64" ? this.arch : "armv7";
         }
     }
@@ -65,7 +76,7 @@ class TlsDependency {
         let _filename = `${this.filename}-${this.distribution}-v${this.version}.${this.extension}`;
         const url = new URL(`https://github.com/bogdanfinn/tls-client/releases/download/v${this.version}/${_filename}`);
         const downloadFolder = customPath ?? (os.tmpdir() ?? process.cwd());
-        if (!fs.existsSync(downloadFolder)) 
+        if (!fs.existsSync(downloadFolder))
             throw new Error(`The download folder does not exist: ${downloadFolder}`);
 
         const destination = path.join(downloadFolder, _filename);
