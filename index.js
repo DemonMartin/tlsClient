@@ -166,10 +166,14 @@ class TlsClient {
         return request;
     }
 
-    async #retryRequest(response, options, retryCount = 0) {
-        if (options.retryIsEnabled && options.retryMaxCount > retryCount && options.retryStatusCodes.includes(response.status)) {
-            return this.#retryRequest(await this.sendRequest(options), options, retryCount + 1);
-        }
+    async #retryRequest(options) {
+        let retryCount = 0;
+        let response;
+
+        do {
+            response = await this.sendRequest(options);
+            response.retryCount = retryCount++;
+        } while (options.retryIsEnabled && options.retryMaxCount > retryCount && options.retryStatusCodes.includes(response.status));
 
         return response;
     }
@@ -178,7 +182,7 @@ class TlsClient {
         await this.#init();
 
         const combinedOptions = this.#combineOptions(options);
-        const request = await this.#retryRequest(await this.sendRequest(combinedOptions), combinedOptions, 0);
+        const request = await this.#retryRequest(combinedOptions);
 
         return request;
     }
