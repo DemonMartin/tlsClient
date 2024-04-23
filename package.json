@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.8",
-    "ffi-rs": "^1.0.58",
+    "ffi-rs": "^1.0.64",
     "workerpool": "^9.1.0"
   },
   "repository": {
