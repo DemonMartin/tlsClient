@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"} FirefoxProfile
+ * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"|"firefox_123"} FirefoxProfile
  */
 
 /**
