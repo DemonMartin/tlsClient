@@ -131,11 +131,11 @@
  * @property {boolean} isRotatingProxy - If true, the proxy is rotating
  * @property {null} proxyUrl - URL of the proxy
  * @property {null} requestBody - Body of the request
- * @property {null} requestCookies - Cookies of the request
- * @property {null} defaultHeaders - Default headers
+ * @property {Cookie[]|null} requestCookies - Cookies of the request
+ * @property {Object|null} defaultHeaders - Default headers
  * @property {boolean} disableIPV6 - If true, IPV6 will be disabled
  * @property {null} localAddress - Local address
- * @property {null} sessionId - ID of the session
+ * @property {String|null} sessionId - ID of the session
  * @property {string} serverNameOverwrite - Overwrite server name
  * @property {null} streamOutputBlockSize - Block size of the stream output
  * @property {null} streamOutputEOFSymbol - EOF symbol of the stream output
