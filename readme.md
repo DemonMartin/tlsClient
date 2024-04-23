@@ -166,6 +166,7 @@ console.log(await client.get("https://example.com/"));
  * @property {string} body - The response body as a string, or the error message
  * @property {Object} headers - The headers of the response
  * @property {Object} cookies - The cookies of the response
+ * @property {number} retryCount - The number of retries
  */
 ```
 
