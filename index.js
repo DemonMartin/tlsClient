@@ -157,7 +157,13 @@ class TlsClient {
     }
 
     async sendRequest(options) {
-        return JSON.parse(await this.pool.exec('request', [JSON.stringify(options)]));
+        const request = JSON.parse(await this.pool.exec('request', [JSON.stringify(options)]));
+        await this.#freeMemory(request.id);
+
+        // Remove the id from the response | Useless for user
+        delete request.id;
+
+        return request;
     }
 
     async #retryRequest(response, options, retryCount = 0) {
@@ -173,10 +179,6 @@ class TlsClient {
 
         const combinedOptions = this.#combineOptions(options);
         const request = await this.#retryRequest(await this.sendRequest(combinedOptions), combinedOptions, 0);
-        await this.#freeMemory(request.id);
-
-        // Remove the id from the response | Useless for user
-        delete request.id;
 
         return request;
     }
