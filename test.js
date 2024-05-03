@@ -2,6 +2,8 @@ import TlsDependency from "./utils/path.js";
 import TlsClient from "./index.js";
 import axios from "axios";
 import path from "path";
+import v8 from 'node:v8';
+import { setMaxIdleHTTPParsers } from "http";
 
 const tlsDependency = new TlsDependency();
 const tlsDependencyPath = tlsDependency.getTLSDependencyPath();
@@ -93,13 +95,13 @@ async function axiosTest() {
 async function oneRequest() {
     const tlsClient = new TlsClient();
     const start = performance.now();
-    const response = await tlsClient.get("https://httpbin.org/status/408", {
+    const response = await tlsClient.get("https://echo.zuplo.io/", {
         withDebug: false
     });
     const end = performance.now();
-    console.log(response)
-    console.log(`Total time: ${end - start} ms`);
-    console.log(await tlsClient.terminate());
+    //console.log(response)
+    //console.log(`Total time: ${end - start} ms`);
+    await tlsClient.terminate()
 }
 
 async function oneAxiosRequest() {
@@ -167,14 +169,47 @@ async function customLibraryDownloadPath() {
     console.log(await tlsClient.terminate());
 }
 
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 (async () => {
     //await axiosTest();
     //await runRequests();
-    await oneRequest();
+    let i = 0;
+    while (true) {
+        let promises = [];
+        for (let i = 0; i < 250; i++) {
+            promises.push(oneRequest());
+        }
+
+        await Promise.allSettled(promises);
+        i++;
+        console.log(i);
+        console.log(process.memoryUsage());
+
+        if(i >= 10) {
+            throw new Error("SIGINT received");
+            break;
+        }
+    }
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
     //await customLibraryFetch();
     //await customLibraryDownloadPath();
 })();
+
+process.once('SIGINT', () => {
+    throw new Error("SIGINT received");
+})
+
+// on exit
+process.once('uncaughtException', async () => {
+    console.log(process.memoryUsage());
+    console.log("Exiting...");
+    await sleep(5000);
+    v8.writeHeapSnapshot(path.join(process.cwd(), 'heapdump', Date.now() + 'heapdump.heapsnapshot'));
+    process.exit(0);
+});
 

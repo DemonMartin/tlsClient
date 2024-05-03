@@ -121,7 +121,7 @@ class TlsClient {
      */
     terminate() {
         try {
-            return this.pool?.terminate?.();
+            return this.pool?.terminate?.(true);
         } catch (error) {
             return undefined;
         }
