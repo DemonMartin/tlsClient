@@ -10,8 +10,7 @@
   "author": "DemonMartin",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.6.8",
-    "ffi-rs": "^1.0.69",
+    "ffi-rs": "^1.0.74",
     "workerpool": "^9.1.0"
   },
   "repository": {
@@ -44,5 +43,8 @@
     "httprequests",
     "client",
     "fingerprints"
-  ]
+  ],
+  "devDependencies": {
+    "axios": "^1.6.8"
+  }
 }
