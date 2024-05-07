@@ -3,7 +3,7 @@ import workerpool from 'workerpool';
 import TlsDependency from './path.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import axios from 'axios';
+import fetch from 'node-fetch';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,28 +31,26 @@ class Client {
             throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
         }
 
-
         console.log('[tlsClient] Detected missing TLS library')
         console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
         console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
         console.log('[tlsClient] Downloading TLS library... This may take a while');
 
-        const response = await axios({
-            url: this.tlsDependencyPath.DOWNLOAD_PATH,
-            method: 'GET',
-            responseType: 'stream'
-        });
+        const response = await fetch(this.tlsDependencyPath.DOWNLOAD_PATH);
 
-        const writer = fs.createWriteStream(this.TLS_LIB_PATH);
+        if (!response.ok) {
+            throw new Error(`Unexpected response ${response.statusText}`);
+        }
 
-        response.data.pipe(writer);
+        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
+        response.body.pipe(fileStream);
 
         return new Promise((resolve, reject) => {
-            writer.on('finish', () => {
+            fileStream.on('finish', () => {
                 console.log('[tlsClient] Successfully downloaded TLS library');
                 resolve();
             });
-            writer.on('error', reject);
+            fileStream.on('error', reject);
         });
     }
 

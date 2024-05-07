@@ -99,8 +99,8 @@ async function oneRequest() {
         withDebug: false
     });
     const end = performance.now();
-    //console.log(response)
-    //console.log(`Total time: ${end - start} ms`);
+    console.log(response)
+    console.log(`Total time: ${end - start} ms`);
     await tlsClient.terminate()
 }
 
@@ -174,25 +174,26 @@ async function sleep(ms) {
 }
 
 (async () => {
+    await oneRequest();
     //await axiosTest();
     //await runRequests();
-    let i = 0;
-    while (true) {
-        let promises = [];
-        for (let i = 0; i < 250; i++) {
-            promises.push(oneRequest());
-        }
-
-        await Promise.allSettled(promises);
-        i++;
-        console.log(i);
-        console.log(process.memoryUsage());
-
-        if(i >= 10) {
-            throw new Error("SIGINT received");
-            break;
-        }
-    }
+    // let i = 0;
+    // while (true) {
+    // let promises = [];
+    // for (let i = 0; i < 250; i++) {
+    // promises.push(oneRequest());
+    // }
+    // 
+    // await Promise.allSettled(promises);
+    // i++;
+    // console.log(i);
+    // console.log(process.memoryUsage());
+    // 
+    // if(i >= 10) {
+    // throw new Error("SIGINT received");
+    // break;
+    // }
+    // }
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
