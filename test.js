@@ -93,15 +93,20 @@ async function axiosTest() {
 }
 
 async function oneRequest() {
+    console.log("1")
     const tlsClient = new TlsClient();
+    console.log("2")
     const start = performance.now();
     const response = await tlsClient.get("https://echo.zuplo.io/", {
         withDebug: false
     });
+
+    console.log("3")
     const end = performance.now();
     console.log(response)
     console.log(`Total time: ${end - start} ms`);
-    await tlsClient.terminate()
+
+    tlsClient.terminate();
 }
 
 async function oneAxiosRequest() {
@@ -175,6 +180,8 @@ async function sleep(ms) {
 
 (async () => {
     await oneRequest();
+
+    await oneRequest();
     //await axiosTest();
     //await runRequests();
     // let i = 0;
@@ -189,7 +196,7 @@ async function sleep(ms) {
     // console.log(i);
     // console.log(process.memoryUsage());
     // 
-    // if(i >= 10) {
+    // if (i >= 10) {
     // throw new Error("SIGINT received");
     // break;
     // }
@@ -206,11 +213,11 @@ process.once('SIGINT', () => {
 })
 
 // on exit
-process.once('uncaughtException', async () => {
-    console.log(process.memoryUsage());
-    console.log("Exiting...");
-    await sleep(5000);
-    v8.writeHeapSnapshot(path.join(process.cwd(), 'heapdump', Date.now() + 'heapdump.heapsnapshot'));
-    process.exit(0);
-});
+// process.once('uncaughtException', async () => {
+// console.log(process.memoryUsage());
+// console.log("Exiting...");
+// await sleep(5000);
+// v8.writeHeapSnapshot(path.join(process.cwd(), 'heapdump', Date.now() + 'heapdump.heapsnapshot'));
+// process.exit(0);
+// });
 

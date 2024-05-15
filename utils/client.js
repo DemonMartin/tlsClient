@@ -137,6 +137,7 @@ class Client {
 
     startWorkerPool() {
         return workerpool.pool(path.join(__dirname, 'client.js'), {
+            workerType: 'process'
         })
     }
 }

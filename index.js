@@ -1,10 +1,148 @@
-import Client from "./utils/client.js";
 import crypto from 'node:crypto';
+
+import ffiRs from 'ffi-rs';
+import TlsDependency from './utils/path.js';
+import path from 'node:path';
+import fs from 'node:fs';
+import fetch from 'node-fetch';
+
+process.env.RUST_BACKTRACE = 'full';
+
+class Client {
+    isLoaded = false;
+    constructor(options) {
+        this.customPath = options?.customLibraryPath ? true : false;
+        this.tlsDependency = new TlsDependency();
+        this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath(options?.customLibraryDownloadPath);
+        this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
+    }
+
+    libraryExists() {
+        return fs.existsSync(path.join(this.TLS_LIB_PATH));
+    }
+
+    async downloadLibrary() {
+        if (this.libraryExists()) return;
+        if (this.customPath) {
+            throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
+        }
+
+        console.log('[tlsClient] Detected missing TLS library')
+        console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
+        console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
+        console.log('[tlsClient] Downloading TLS library... This may take a while');
+
+        const response = await fetch(this.tlsDependencyPath.DOWNLOAD_PATH);
+
+        if (!response.ok) {
+            throw new Error(`Unexpected response ${response.statusText}`);
+        }
+
+        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
+        response.body.pipe(fileStream);
+
+        return new Promise((resolve, reject) => {
+            fileStream.on('finish', () => {
+                console.log('[tlsClient] Successfully downloaded TLS library');
+                resolve();
+            });
+            fileStream.on('error', reject);
+        });
+    }
+
+    async open() {
+        await this.downloadLibrary();
+
+        ffiRs.open({
+            library: 'tls',
+            path: this.TLS_LIB_PATH
+        })
+
+        this.isLoaded = true;
+    }
+
+    request(payload) {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'request',
+            retType: 0,
+            paramsType: [0],
+            paramsValue: [payload]
+        })
+    }
+
+    getCookiesFromSession(payload) {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'getCookiesFromSession',
+            retType: 0,
+            paramsType: [0],
+            paramsValue: [payload]
+        })
+    }
+
+    addCookiesToSession(payload) {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'addCookiesToSession',
+            retType: 0,
+            paramsType: [0],
+            paramsValue: [payload]
+        })
+    }
+
+    freeMemory(payload) {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'freeMemory',
+            retType: 2,
+            paramsType: [0],
+            paramsValue: [payload]
+        })
+    }
+
+    destroyAll() {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'destroyAll',
+            retType: 0,
+            paramsType: [],
+            paramsValue: []
+        })
+    }
+
+    destroySession(payload) {
+        if (!this.isLoaded) throw new Error('Library not loaded');
+        return ffiRs.load({
+            library: 'tls',
+            funcName: 'destroySession',
+            retType: 0,
+            paramsType: [0],
+            paramsValue: [payload]
+        })
+    }
+
+    close() {
+        ffiRs.close('tls');
+
+        this.isLoaded = false;
+    }
+}
 
 /**
  * @class TlsClient
  */
 class TlsClient {
+    /**
+     * @type {Client}
+     */
+    static libClient = null;
+
     /**
      * @description Create a new TlsClient
      * @param {import('./typedefs.js').TlsClientDefaultOptions} options 
@@ -53,13 +191,15 @@ class TlsClient {
         };
 
         this.sessionId = crypto.randomUUID();
-        this.client = new Client(options);
+
+        if (!TlsClient.libClient) {
+            TlsClient.libClient = new Client(this.defaultOptions);
+        }
     }
 
     async #init() {
-        if (!this.pool) {
-            await this.client.open();
-            this.pool = this.client.startWorkerPool();
+        if (TlsClient.libClient.isLoaded != true) {
+            await TlsClient.libClient.open();
         }
     }
 
@@ -120,11 +260,7 @@ class TlsClient {
      * @description Terminate the TlsClient WorkerPool
      */
     terminate() {
-        try {
-            return this.pool?.terminate?.(true);
-        } catch (error) {
-            return undefined;
-        }
+        return TlsClient.libClient.close();
     }
 
     /**
@@ -139,8 +275,8 @@ class TlsClient {
      * @description Destroys the sessionId 
      * @returns {}
      */
-    async destorySession() {
-        return await this.pool.exec('destroySession', [this.sessionId]);
+    destorySession() {
+        return TlsClient.libClient.destroySession(this.sessionId);
     }
 
     #genSession() {
@@ -153,11 +289,11 @@ class TlsClient {
      * @returns {Promise} A promise that resolves when the memory has been freed.
      */
     async #freeMemory(id) {
-        return await this.pool.exec('freeMemory', [id]);
+        return TlsClient.libClient.freeMemory(id);
     }
 
     async sendRequest(options) {
-        const request = JSON.parse(await this.pool.exec('request', [JSON.stringify(options)]));
+        const request = JSON.parse(TlsClient.libClient.request(JSON.stringify(options)));
         await this.#freeMemory(request.id);
 
         // Remove the id from the response | Useless for user
@@ -320,7 +456,7 @@ class TlsClient {
      */
     async getCookiesFromSession(sessionId, url) {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
-        const response = JSON.parse(await this.pool.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })]));
+        const response = JSON.parse(TlsClient.libClient.getCookiesFromSession(JSON.stringify({ sessionId, url })));
         await this.#freeMemory(response.id);
         delete response.id;
 
@@ -337,7 +473,7 @@ class TlsClient {
      */
     async addCookiesToSession(sessionId, url, cookies) {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
-        const response = JSON.parse(await this.pool.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })]));
+        const response = JSON.parse(TlsClient.libClient.addCookiesToSession(JSON.stringify({ sessionId, url, cookies })));
         await this.#freeMemory(response.id);
         delete response.id;
 
