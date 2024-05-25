@@ -1,4 +1,4 @@
-import ffiRs from 'ffi-rs';
+import koffi from 'koffi';
 import workerpool from 'workerpool';
 import TlsDependency from './path.js';
 import path from 'node:path';
@@ -19,6 +19,8 @@ class Client {
         this.tlsDependency = new TlsDependency();
         this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath(options?.customLibraryDownloadPath);
         this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
+
+        this.lib = null;
     }
 
     libraryExists() {
@@ -57,82 +59,28 @@ class Client {
     async open() {
         await this.downloadLibrary();
 
-        ffiRs.open({
-            library: 'tls',
-            path: this.TLS_LIB_PATH,
-        })
+        this.lib = koffi.load(this.TLS_LIB_PATH);
     }
 
     createInstance() {
+        if (!this.lib) {
+            throw new Error('Library not loaded');
+        }
+
         return {
-            request: (payload) => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'request',
-                    retType: 0,
-                    paramsType: [0],
-                    paramsValue: [payload]
-                })
-            },
-            getCookiesFromSession: (payload) => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'getCookiesFromSession',
-                    retType: 0,
-                    paramsType: [0],
-                    paramsValue: [payload]
-                })
-            },
-            addCookiesToSession: (payload) => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'addCookiesToSession',
-                    retType: 0,
-                    paramsType: [0],
-                    paramsValue: [payload]
-                })
-            },
-            freeMemory: (payload) => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'freeMemory',
-                    retType: 2,
-                    paramsType: [0],
-                    paramsValue: [payload]
-                })
-            },
-            destroyAll: () => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'destroyAll',
-                    retType: 0,
-                    paramsType: [],
-                    paramsValue: []
-                })
-            },
-            destroySession: (payload) => {
-                return ffiRs.load({
-                    library: 'tls',
-                    funcName: 'destroySession',
-                    retType: 0,
-                    paramsType: [0],
-                    paramsValue: [payload]
-                })
-            },
+            request: this.lib.func('request', 'string', ['string']),
+            getCookiesFromSession: this.lib.func('getCookiesFromSession', 'string', ['string']),
+            addCookiesToSession: this.lib.func('addCookiesToSession', 'string', ['string']),
+            freeMemory: this.lib.func('freeMemory', 'void', ['string']),
+            destroyAll: this.lib.func('destroyAll', 'void', []),
+            destroySession: this.lib.func('destroySession', 'string', ['string']),
         }
     }
 
     startWorker() {
         const instance = this.createInstance();
 
-        workerpool.worker({
-            request: instance.request,
-            getCookiesFromSession: instance.getCookiesFromSession,
-            addCookiesToSession: instance.addCookiesToSession,
-            freeMemory: instance.freeMemory,
-            destroyAll: instance.destroyAll,
-            destroySession: instance.destroySession,
-        });
+        workerpool.worker(instance);
     }
 
     startWorkerPool() {
@@ -146,5 +94,6 @@ export default Client;
 // For the workerpool to work, you need to run the following code
 if (!workerpool.isMainThread) {
     const client = new Client();
+    await client.open();
     client.startWorker();
 }

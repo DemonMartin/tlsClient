@@ -1,5 +1,5 @@
 # TlsClientWrapper
-A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
+A wrapper for `bogdanfinn/tls-client` based on koffi for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
 
 # Installation
 With npm: 
@@ -10,7 +10,7 @@ npm install tlsclientwrapper
 # Information
 This module, compared to bogdanfinn's example, offers:
 1. Advanced JSDocs for faster development.
-2. Use of the more updated ffi-rs.
+2. Use of the more updated koffi.
 3. Automatic conversations, session support, etc.
 4. Default settings compatible with bogdafinn's client.
 5. Built-in automatic retries on specific status codes.
@@ -73,13 +73,13 @@ console.log(await client.get("https://example.com/"));
 ```
 
 > ⚠️ Warning ⚠️
-> All the JSDocs are currently based on the TLSClient Version 1.7.2, if you're using a custom LibraryPath it will not update the JSDocs.
+> All the JSDocs are currently based on the TLSClient Version 1.7.5, if you're using a custom LibraryPath it will not update the JSDocs.
 
 ### Constructor Options
 ```js
 /**
  * @typedef {Object} TlsClientDefaultOptions
- * @property {ClientProfile} [tlsClientIdentifier='chrome_120'] - Identifier of the TLS client
+ * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
  * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
  * @property {string|null} [customLibraryPath=null] - Path to the custom library file
  * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder

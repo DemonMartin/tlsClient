@@ -96,10 +96,10 @@ async function oneRequest() {
     const tlsClient = new TlsClient();
     const start = performance.now();
     const response = await tlsClient.get("https://echo.zuplo.io/", {
-        withDebug: false
+        //withDebug: false
     });
     const end = performance.now();
-    console.log(response)
+    //console.log(response)
     console.log(`Total time: ${end - start} ms`);
     await tlsClient.terminate()
 }
@@ -174,26 +174,29 @@ async function sleep(ms) {
 }
 
 (async () => {
-    await oneRequest();
+    //await oneRequest();
     //await axiosTest();
     //await runRequests();
-    // let i = 0;
-    // while (true) {
-    // let promises = [];
-    // for (let i = 0; i < 250; i++) {
-    // promises.push(oneRequest());
-    // }
-    // 
-    // await Promise.allSettled(promises);
-    // i++;
-    // console.log(i);
-    // console.log(process.memoryUsage());
-    // 
-    // if(i >= 10) {
-    // throw new Error("SIGINT received");
-    // break;
-    // }
-    // }
+    let i = 0;
+    while (true) {
+        let promises = [];
+        for (let i = 0; i < 250; i++) {
+            promises.push(oneRequest());
+        }
+
+        await Promise.allSettled(promises);
+        i++;
+        console.log(i);
+        console.log(process.memoryUsage());
+
+        if (i >= 10) {
+
+            await sleep(15000);
+
+            throw new Error("SIGINT received");
+            break;
+        }
+    }
     //await oneAxiosRequest();
     //await defineAndGo();
     //await fetchCookiesAndAddCookies()
@@ -201,16 +204,16 @@ async function sleep(ms) {
     //await customLibraryDownloadPath();
 })();
 
-process.once('SIGINT', () => {
-    throw new Error("SIGINT received");
-})
-
-// on exit
-process.once('uncaughtException', async () => {
-    console.log(process.memoryUsage());
-    console.log("Exiting...");
-    await sleep(5000);
-    v8.writeHeapSnapshot(path.join(process.cwd(), 'heapdump', Date.now() + 'heapdump.heapsnapshot'));
-    process.exit(0);
-});
+// process.once('SIGINT', () => {
+// throw new Error("SIGINT received");
+// })
+//
+//on exit
+// process.once('uncaughtException', async () => {
+// console.log(process.memoryUsage());
+// console.log("Exiting...");
+// await sleep(5000);
+// v8.writeHeapSnapshot(path.join(process.cwd(), 'heapdump', Date.now() + 'heapdump.heapsnapshot'));
+// process.exit(0);
+// });
 

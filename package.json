@@ -10,7 +10,7 @@
   "author": "DemonMartin",
   "license": "ISC",
   "dependencies": {
-    "ffi-rs": "^1.0.74",
+    "koffi": "^2.8.9",
     "node-fetch": "^3.3.2",
     "workerpool": "^9.1.0"
   },

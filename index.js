@@ -14,7 +14,7 @@ class TlsClient {
          * @type {import('./typedefs.js').TlsClientDefaultOptions}
          */
         this.defaultOptions = {
-            tlsClientIdentifier: 'chrome_120',
+            tlsClientIdentifier: 'chrome_124',
             rotateSessions: false,
             catchPanics: false,
             certificatePinningHosts: null,
@@ -25,7 +25,7 @@ class TlsClient {
             forceHttp1: false,
             headerOrder: ["host", "user-agent", "accept", "accept-language", "accept-encoding", "connection", "upgrade-insecure-requests", "if-modified-since", "cache-control", "dnt", "content-length", "content-type", "range", "authorization", "x-real-ip", "x-forwarded-for", "x-requested-with", "x-csrf-token", "x-request-id", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "origin", "referer", "pragma", "max-forwards", "x-http-method-override", "if-unmodified-since", "if-none-match", "if-match", "if-range", "accept-datetime"],
             defaultHeaders: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             },
             insecureSkipVerify: false,
             isByteRequest: false,
@@ -332,7 +332,7 @@ class TlsClient {
      * @description Add cookies to a given session 
      * @param {string} sessionId - The existing session ID.
      * @param {string} url - The URL to add cookies for.
-     * @param {Cookie[]} cookie - The cookies to add.
+     * @param {import('./typedefs.js').Cookie[]} cookie - The cookies to add.
      * @returns {Promise<import('./typedefs.js').CookieResponse>}
      */
     async addCookiesToSession(sessionId, url, cookies) {
