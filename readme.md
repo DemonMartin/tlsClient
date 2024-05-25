@@ -73,7 +73,8 @@ console.log(await client.get("https://example.com/"));
 ```
 
 > ⚠️ Warning ⚠️
-> All the JSDocs are currently based on the TLSClient Version 1.7.5, if you're using a custom LibraryPath it will not update the JSDocs.
+> - All the JSDocs are currently based on the TLSClient Version 1.7.5, if you're using a custom LibraryPath it will not update the JSDocs.
+> - Koffi isn't might not be supported by your platform. Please check: https://github.com/Koromix/koffi and verify that your platform is officially supported.
 
 ### Constructor Options
 ```js
