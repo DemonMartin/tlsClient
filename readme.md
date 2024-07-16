@@ -1,14 +1,19 @@
 # TlsClientWrapper
+
 A wrapper for `bogdanfinn/tls-client` based on koffi for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
 
 # Installation
-With npm: 
+
+With npm:
+
 ```bash
 npm install tlsclientwrapper
 ```
 
 # Information
+
 This module, compared to bogdanfinn's example, offers:
+
 1. Advanced JSDocs for faster development.
 2. Use of the more updated koffi.
 3. Automatic conversations, session support, etc.
@@ -18,15 +23,20 @@ This module, compared to bogdanfinn's example, offers:
 7. Many more enhancements!
 
 # Usage
-### Simple Get Request:
+
+### Simple Get Request
+
 ```js
 import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient();
 
 console.log(await client.get("https://example.com/"));
+
+await client.terminate(); // Terminate the TlsClient WorkerPool once everything is finished.
 ```
 
-### Default Headers/Cookies for all Requests:
+### Default Headers/Cookies for all Requests
+
 ```js
 import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient({
@@ -46,10 +56,14 @@ const client = new tlsClient({
 });
 
 console.log(await client.get("https://myhttpheader.com/"));
+
+await client.terminate();
 ```
 
 ### TLS Request
+
 *Don't worry, all requests by default are sent imitating chrome_120 TLS*
+
 ```js
 import tlsClient from 'tlsclientwrapper';
 const client = new tlsClient({
@@ -57,10 +71,13 @@ const client = new tlsClient({
 });
 
 console.log(await client.get("https://tls.peet.ws/api/all"));
+await client.terminate();
 ```
-> For more Identifiers, check here: https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles
+
+> For more Identifiers, check here: <https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles>
 
 ### Custom Library
+
 ```js
 import tlsClient from 'tlsclientwrapper';
 import path from 'node:path';
@@ -70,13 +87,16 @@ const client = new tlsClient({
 });
 
 console.log(await client.get("https://example.com/"));
+await client.terminate();
 ```
 
 > ⚠️ Warning ⚠️
+>
 > - All the JSDocs are currently based on the TLSClient Version 1.7.5, if you're using a custom LibraryPath it will not update the JSDocs.
-> - Koffi isn't might not be supported by your platform. Please check: https://github.com/Koromix/koffi and verify that your platform is officially supported.
+> - Koffi might not be supported by your platform. Please check: <https://github.com/Koromix/koffi> and verify that your platform is officially supported.
 
 ### Constructor Options
+
 ```js
 /**
  * @typedef {Object} TlsClientDefaultOptions
@@ -117,6 +137,7 @@ console.log(await client.get("https://example.com/"));
 ```
 
 ### Additional options for overriding defaults
+
 ```js
 /**
  * @typedef {Object} TlsClientOptions
@@ -158,6 +179,7 @@ console.log(await client.get("https://example.com/"));
 ```
 
 ### TlsClientReponse
+
 ```js
 /**
  * @typedef {Object} TlsClientResponse
@@ -171,9 +193,7 @@ console.log(await client.get("https://example.com/"));
  */
 ```
 
-
 # Additional Information
-For more Documentation, please check https://bogdanfinn.gitbook.io/open-source-oasis
+
+For more Documentation, please check <https://bogdanfinn.gitbook.io/open-source-oasis>
 Special thanks to [@bogdanfinn](https://github.com/bogdanfinn) and [@heydryft](https://github.com/heydryft) which both did great work and helped me build this wrapper.
-
-

@@ -6,8 +6,21 @@ import fs from 'node:fs';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let __filename, __dirname;
+
+if (typeof __filename === 'undefined' && typeof __dirname === 'undefined') {
+    if (typeof require !== 'undefined' && require.main) {
+        // CommonJS environment
+        __filename = __filename || __filename;
+        __dirname = __dirname || path.dirname(__filename);
+    } else if (typeof import.meta.url !== 'undefined') {
+        // ESM environment
+        __filename = fileURLToPath(import.meta.url);
+        __dirname = path.dirname(__filename);
+    } else {
+        throw new Error('Failed setting __filename and __dirname... Please report this to the Developer.');
+    }
+}
 
 class Client {
 

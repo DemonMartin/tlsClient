@@ -174,9 +174,10 @@ async function sleep(ms) {
 }
 
 (async () => {
-    //await oneRequest();
+    await oneRequest();
     //await axiosTest();
     //await runRequests();
+    return;
     let i = 0;
     while (true) {
         let promises = [];
