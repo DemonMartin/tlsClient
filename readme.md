@@ -122,6 +122,7 @@ await client.terminate();
  * @property {String|null} [proxyUrl=null] - URL of the proxy. Example: http://user:password@ip:port
  * @property {Cookie[]|null} [defaultCookies=null] - Cookies of the request
  * @property {boolean} [disableIPV6=false] - If true, IPV6 will be disabled
+ * @property {boolean} [disableIPV4=false] - If true, IPV4 will be disabled
  * @property {null} [localAddress=null] - Local address [not Sure? Docs are not clear]
  * @property {string} [serverNameOverwrite=''] - Lookup https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/client-options
  * @property {null} streamOutputBlockSize - Block size of the stream output
