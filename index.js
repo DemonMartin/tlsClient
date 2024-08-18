@@ -307,7 +307,7 @@ class TlsClient {
         try {
             this.destorySession();
             this.client?.lib?.unload?.();
-            return this.pool?.terminate?.(true);
+            return this.pool?.terminate?.();
         } catch (error) {
             return undefined;
         }
@@ -536,5 +536,12 @@ class TlsClient {
         return this.sessionId;
     }
 
+    /**
+     * @description Destroy all existing sessions in order to release allocated memory.
+     * @returns {}
+     */
+    destroyAll() {
+        return this.pool.exec('destroyAll', []);
+    }
 }
 export default TlsClient;

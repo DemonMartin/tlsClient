@@ -10,9 +10,9 @@
   "author": "DemonMartin",
   "license": "ISC",
   "dependencies": {
-    "koffi": "^2.8.9",
+    "koffi": "^2.9.0",
     "node-fetch": "^3.3.2",
-    "workerpool": "^9.1.0"
+    "workerpool": "^9.1.3"
   },
   "repository": {
     "type": "git",
