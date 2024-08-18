@@ -101,7 +101,6 @@ await client.terminate();
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
- * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
  * @property {string|null} [customLibraryPath=null] - Path to the custom library file
  * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
@@ -114,7 +113,8 @@ await client.terminate();
  * @property {boolean} [followRedirects=false] - If true, redirects will be followed
  * @property {boolean} [forceHttp1=false] - If true, HTTP/1 will be forced
  * @property {string[]} [headerOrder=["host", "user-agent", "accept", "accept-language", "accept-encoding", "connection", "upgrade-insecure-requests", "if-modified-since", "cache-control", "dnt", "content-length", "content-type", "range", "authorization", "x-real-ip", "x-forwarded-for", "x-requested-with", "x-csrf-token", "x-request-id", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "origin", "referer", "pragma", "max-forwards", "x-http-method-override", "if-unmodified-since", "if-none-match", "if-match", "if-range", "accept-datetime"]] - Order of headers
- * @property {Object|null} [defaultHeaders=Object] - default headers which will be used in every request - Default: UserAgent Chrome v120
+ * @property {Object|null} [defaultHeaders=Object] - default headers which will be used in every request - Default: UserAgent Chrome v124
+ * @property {Object|null} [connectHeaders=null] - Headers to be used during the CONNECT request.
  * @property {boolean} [insecureSkipVerify=false] - If true, insecure verification will be skipped
  * @property {boolean} [isByteRequest=false] - If true, the request is a byte request
  * @property {boolean} [isByteResponse=false] - If true, the response is a byte response
