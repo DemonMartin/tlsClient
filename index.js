@@ -84,7 +84,6 @@ import crypto from 'node:crypto';
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
- * @property {boolean} [rotateSessions=false] - If true, sessions will be rotated on each request -> This will cause the cookies to be reset
  * @property {string|null} [customLibraryPath=null] - Path to the custom library file
  * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
@@ -200,7 +199,6 @@ class TlsClient {
          */
         this.defaultOptions = {
             tlsClientIdentifier: 'chrome_124',
-            rotateSessions: false,
             catchPanics: false,
             certificatePinningHosts: null,
             customTlsClient: null,
@@ -307,6 +305,7 @@ class TlsClient {
      */
     terminate() {
         try {
+            this.destorySession();
             this.client?.lib?.unload?.();
             return this.pool?.terminate?.(true);
         } catch (error) {
@@ -319,19 +318,16 @@ class TlsClient {
      * @returns {string|null} The session ID, or null if session rotation is enabled.
      */
     getSession() {
-        return this.defaultOptions.rotateSessions ? null : this.sessionId;
+        return this.sessionId;
     }
 
     /**
-     * @description Destroys the sessionId 
+     * @description Destroys the sessionId
+     * @param {string} [id=this.sessionId] - The ID associated with the memory to free.
      * @returns {}
      */
-    async destorySession() {
-        return await this.pool.exec('destroySession', [this.sessionId]);
-    }
-
-    #genSession() {
-        return this.defaultOptions.rotateSessions ? crypto.randomUUID() : this.sessionId;
+    async destorySession(id = this.sessionId) {
+        return await this.pool.exec('destroySession', [id]);
     }
 
     /**
@@ -382,7 +378,7 @@ class TlsClient {
      */
     async get(url, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "GET",
             "requestBody": null,
@@ -403,7 +399,7 @@ class TlsClient {
         if (typeof body !== 'string') body = body.toString();
 
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "POST",
             "requestBody": this.#convertBody(body),
@@ -421,7 +417,7 @@ class TlsClient {
      */
     async put(url, body, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "PUT",
             "requestBody": this.#convertBody(body),
@@ -438,7 +434,7 @@ class TlsClient {
      */
     async delete(url, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "DELETE",
             "requestBody": "",
@@ -455,7 +451,7 @@ class TlsClient {
      */
     async head(url, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "HEAD",
             "requestBody": "",
@@ -473,7 +469,7 @@ class TlsClient {
      */
     async patch(url, body, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "PATCH",
             "requestBody": this.#convertBody(body),
@@ -490,7 +486,7 @@ class TlsClient {
      */
     async options(url, options = {}) {
         return this.#request({
-            "sessionId": this.#genSession(),
+            "sessionId": this.sessionId,
             "requestUrl": this.#convertUrl(url),
             "requestMethod": "OPTIONS",
             "requestBody": "",
@@ -532,7 +528,7 @@ class TlsClient {
     }
 
     /**
-     * @description Rotate the session ID.
+     * @description Rotate the session ID. [Warning: This will NOT destroy the previous session, call destroySession first]
      * @returns {string} The new session ID.
      */
     rotateSession() {
