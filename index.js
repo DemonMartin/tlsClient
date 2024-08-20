@@ -307,7 +307,7 @@ class TlsClient {
      */
     terminate() {
         try {
-            this.destorySession();
+            this.destroySession();
             this.client?.lib?.unload?.();
             return this.pool?.terminate?.();
         } catch (error) {
@@ -328,7 +328,7 @@ class TlsClient {
      * @param {string} [id=this.sessionId] - The ID associated with the memory to free.
      * @returns {}
      */
-    async destorySession(id = this.sessionId) {
+    async destroySession(id = this.sessionId) {
         return await this.pool.exec('destroySession', [id]);
     }
 
