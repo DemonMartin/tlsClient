@@ -100,6 +100,9 @@ class Client {
 
     startWorkerPool() {
         return workerpool.pool(path.join(__dirname, 'client.js'), {
+            workerThreadOpts: {
+                argv: [this.TLS_LIB_PATH]
+            }
         })
     }
 }
@@ -108,7 +111,14 @@ export default Client;
 
 // For the workerpool to work, you need to run the following code
 if (!workerpool.isMainThread) {
-    const client = new Client();
+    while (!fs.existsSync(process.argv[2])) {
+        // Wait for the library to be downloaded
+        setTimeout(() => { }, 100);
+    }
+
+    const client = new Client({
+        customLibraryPath: process.argv[2]
+    });
     await client.open();
     client.startWorker();
 }
