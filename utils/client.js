@@ -70,7 +70,9 @@ class Client {
     }
 
     async open() {
-        await this.downloadLibrary();
+        if (workerpool.isMainThread) {
+            await this.downloadLibrary();
+        }
 
         this.lib = koffi.load(this.TLS_LIB_PATH);
     }
