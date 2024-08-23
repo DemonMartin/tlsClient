@@ -110,7 +110,7 @@ class Client {
 export default Client;
 
 // For the workerpool to work, you need to run the following code
-if (!workerpool.isMainThread) {
+if (!workerpool.isMainThread && process.argv.length > 2) {
     while (!fs.existsSync(process.argv[2])) {
         // Wait for the library to be downloaded
         setTimeout(() => { }, 100);
