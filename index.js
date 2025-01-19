@@ -543,6 +543,8 @@ class TlsClient {
      */
     async getCookiesFromSession(sessionId, url) {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
+        await this.#init();
+
         const response = JSON.parse(
             await this.pool.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })])
         );
@@ -562,6 +564,8 @@ class TlsClient {
      */
     async addCookiesToSession(sessionId, url, cookies) {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
+        await this.#init();
+
         const response = JSON.parse(
             await this.pool.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })])
         );
@@ -585,6 +589,7 @@ class TlsClient {
      * @returns {}
      */
     destroyAll() {
+        if (!this.pool) return;
         return this.pool.exec('destroyAll', []);
     }
 }
