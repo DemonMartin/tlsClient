@@ -2,7 +2,7 @@ import Client from './utils/client.js';
 import crypto from 'node:crypto';
 
 /**
- * @typedef {"chrome_103"|"chrome_104"|"chrome_105"|"chrome_106"|"chrome_107"|"chrome_108"|"chrome_109"|"chrome_110"|"chrome_111"|"chrome_112"|"chrome_116_PSK"|"chrome_116_PSK_PQ"|"chrome_117"|"chrome_120"|"chrome_124"} ChromeProfile
+ * @typedef {"chrome_103"|"chrome_104"|"chrome_105"|"chrome_106"|"chrome_107"|"chrome_108"|"chrome_109"|"chrome_110"|"chrome_111"|"chrome_112"|"chrome_116_PSK"|"chrome_116_PSK_PQ"|"chrome_117"|"chrome_120"|"chrome_124"|"chrome_131"|"chrome_131_PSK"} ChromeProfile
  */
 
 /**
@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
  */
 
 /**
- * @typedef {"safari_ios_15_5"|"safari_ios_15_6"|"safari_ios_16_0"} SafariIOSProfile
+ * @typedef {"safari_ios_15_5"|"safari_ios_15_6"|"safari_ios_16_0"|"safari_ios_17_0"|"safari_ios_18_0"} SafariIOSProfile
  */
 
 /**
@@ -18,7 +18,7 @@ import crypto from 'node:crypto';
  */
 
 /**
- * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"|"firefox_123"} FirefoxProfile
+ * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"|"firefox_123"|"firefox_132"|"firefox_133"} FirefoxProfile
  */
 
 /**
@@ -83,7 +83,7 @@ import crypto from 'node:crypto';
 
 /**
  * @typedef {Object} TlsClientDefaultOptions
- * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
+ * @property {ClientProfile} [tlsClientIdentifier='chrome_131'] - Identifier of the TLS client
  * @property {string|null} [customLibraryPath=null] - Path to the custom library file
  * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
@@ -199,7 +199,7 @@ class TlsClient {
          * @type {TlsClientDefaultOptions}
          */
         this.defaultOptions = {
-            tlsClientIdentifier: 'chrome_124',
+            tlsClientIdentifier: 'chrome_131',
             catchPanics: false,
             certificatePinningHosts: null,
             customTlsClient: null,
@@ -246,7 +246,7 @@ class TlsClient {
             ],
             defaultHeaders: {
                 'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             },
             connectHeaders: null,
             insecureSkipVerify: false,
