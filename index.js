@@ -1,4 +1,4 @@
-import Client from "./utils/client.js";
+import Client from './utils/client.js';
 import crypto from 'node:crypto';
 
 /**
@@ -155,7 +155,7 @@ import crypto from 'node:crypto';
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
  * @property {number} [retryMaxCount=3] - Maximum number of retries
  * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
-*/
+ */
 
 /**
  * @typedef {Object} TlsClientResponse
@@ -192,7 +192,7 @@ import crypto from 'node:crypto';
 class TlsClient {
     /**
      * @description Create a new TlsClient
-     * @param {TlsClientDefaultOptions} options 
+     * @param {TlsClientDefaultOptions} options
      */
     constructor(options) {
         /**
@@ -207,9 +207,46 @@ class TlsClient {
             transportOptions: null,
             followRedirects: false,
             forceHttp1: false,
-            headerOrder: ["host", "user-agent", "accept", "accept-language", "accept-encoding", "connection", "upgrade-insecure-requests", "if-modified-since", "cache-control", "dnt", "content-length", "content-type", "range", "authorization", "x-real-ip", "x-forwarded-for", "x-requested-with", "x-csrf-token", "x-request-id", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "origin", "referer", "pragma", "max-forwards", "x-http-method-override", "if-unmodified-since", "if-none-match", "if-match", "if-range", "accept-datetime"],
+            headerOrder: [
+                'host',
+                'user-agent',
+                'accept',
+                'accept-language',
+                'accept-encoding',
+                'connection',
+                'upgrade-insecure-requests',
+                'if-modified-since',
+                'cache-control',
+                'dnt',
+                'content-length',
+                'content-type',
+                'range',
+                'authorization',
+                'x-real-ip',
+                'x-forwarded-for',
+                'x-requested-with',
+                'x-csrf-token',
+                'x-request-id',
+                'sec-ch-ua',
+                'sec-ch-ua-mobile',
+                'sec-ch-ua-platform',
+                'sec-fetch-dest',
+                'sec-fetch-mode',
+                'sec-fetch-site',
+                'origin',
+                'referer',
+                'pragma',
+                'max-forwards',
+                'x-http-method-override',
+                'if-unmodified-since',
+                'if-none-match',
+                'if-match',
+                'if-range',
+                'accept-datetime',
+            ],
             defaultHeaders: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             },
             connectHeaders: null,
             insecureSkipVerify: false,
@@ -235,7 +272,7 @@ class TlsClient {
             retryMaxCount: 3,
             retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
             customLibraryDownloadPath: null,
-            ...options
+            ...options,
         };
 
         this.sessionId = crypto.randomUUID();
@@ -251,8 +288,8 @@ class TlsClient {
 
     /**
      * @description Set the default cookies for the TlsClient
-     * @param {Cookie[]} cookies 
-     * @returns 
+     * @param {Cookie[]} cookies
+     * @returns
      */
     setDefaultCookies(cookies) {
         this.defaultOptions.defaultCookies = cookies;
@@ -271,14 +308,11 @@ class TlsClient {
         const defaultHeaders = this.defaultOptions.defaultHeaders || {};
         const headers = {
             ...defaultHeaders,
-            ...options.headers || {}
-        }
+            ...(options.headers || {}),
+        };
 
         const defaultCookies = this.defaultOptions.defaultCookies || [];
-        const requestCookies = [
-            ...defaultCookies,
-            ...options.requestCookies || []
-        ]
+        const requestCookies = [...defaultCookies, ...(options.requestCookies || [])];
 
         return {
             ...this.defaultOptions,
@@ -288,8 +322,8 @@ class TlsClient {
 
             // Remove the headers and cookies from the default options
             defaultCookies: undefined,
-            defaultHeaders: undefined
-        }
+            defaultHeaders: undefined,
+        };
     }
 
     #convertBody(body) {
@@ -358,7 +392,11 @@ class TlsClient {
         do {
             response = await this.sendRequest(options);
             response.retryCount = retryCount++;
-        } while (options.retryIsEnabled && options.retryMaxCount > retryCount && options.retryStatusCodes.includes(response.status));
+        } while (
+            options.retryIsEnabled &&
+            options.retryMaxCount > retryCount &&
+            options.retryStatusCodes.includes(response.status)
+        );
 
         return response;
     }
@@ -374,26 +412,26 @@ class TlsClient {
 
     /**
      * @description Send a GET request
-     * @param {URL|string} url 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async get(url, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "GET",
-            "requestBody": null,
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'GET',
+            requestBody: null,
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a POST request
-     * @param {URL|string} url 
-     * @param {JSON|string} body 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {JSON|string} body
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async post(url, body, options = {}) {
@@ -401,99 +439,99 @@ class TlsClient {
         if (typeof body !== 'string') body = body.toString();
 
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "POST",
-            "requestBody": this.#convertBody(body),
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'POST',
+            requestBody: this.#convertBody(body),
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a PUT request
-     * @param {URL|string} url 
-     * @param {JSON|string} body 
-     * @param TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {JSON|string} body
+     * @param TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async put(url, body, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "PUT",
-            "requestBody": this.#convertBody(body),
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'PUT',
+            requestBody: this.#convertBody(body),
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a DELETE request
-     * @param {URL|string} url 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async delete(url, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "DELETE",
-            "requestBody": "",
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'DELETE',
+            requestBody: '',
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a HEAD request
-     * @param {URL|string} url 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async head(url, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "HEAD",
-            "requestBody": "",
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'HEAD',
+            requestBody: '',
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a PATCH request
-     * @param {URL|string} url 
-     * @param {JSON|string} body 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {JSON|string} body
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async patch(url, body, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "PATCH",
-            "requestBody": this.#convertBody(body),
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'PATCH',
+            requestBody: this.#convertBody(body),
+            requestCookies: [],
+            ...options,
         });
     }
 
     /**
      * @description Send a OPTIONS request
-     * @param {URL|string} url 
-     * @param {TlsClientOptions} options 
+     * @param {URL|string} url
+     * @param {TlsClientOptions} options
      * @returns {Promise<TlsClientResponse>}
      */
     async options(url, options = {}) {
         return this.#request({
-            "sessionId": this.sessionId,
-            "requestUrl": this.#convertUrl(url),
-            "requestMethod": "OPTIONS",
-            "requestBody": "",
-            "requestCookies": [],
-            ...options
+            sessionId: this.sessionId,
+            requestUrl: this.#convertUrl(url),
+            requestMethod: 'OPTIONS',
+            requestBody: '',
+            requestCookies: [],
+            ...options,
         });
     }
 
@@ -505,7 +543,9 @@ class TlsClient {
      */
     async getCookiesFromSession(sessionId, url) {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
-        const response = JSON.parse(await this.pool.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })]));
+        const response = JSON.parse(
+            await this.pool.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })])
+        );
         await this.#freeMemory(response.id);
         delete response.id;
 
@@ -514,7 +554,7 @@ class TlsClient {
 
     /**
      * @deprecated Use requestCookies instead
-     * @description Add cookies to a given session 
+     * @description Add cookies to a given session
      * @param {string} sessionId - The existing session ID.
      * @param {string} url - The URL to add cookies for.
      * @param {Cookie[]} cookie - The cookies to add.
@@ -522,7 +562,9 @@ class TlsClient {
      */
     async addCookiesToSession(sessionId, url, cookies) {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
-        const response = JSON.parse(await this.pool.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })]));
+        const response = JSON.parse(
+            await this.pool.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })])
+        );
         await this.#freeMemory(response.id);
         delete response.id;
 

@@ -23,7 +23,6 @@ if (typeof __filename === 'undefined' && typeof __dirname === 'undefined') {
 }
 
 class Client {
-
     // static workerpool = workerpool.pool(path.join(__dirname, 'client.js'), {
     // });
 
@@ -46,7 +45,7 @@ class Client {
             throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
         }
 
-        console.log('[tlsClient] Detected missing TLS library')
+        console.log('[tlsClient] Detected missing TLS library');
         console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
         console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
         console.log('[tlsClient] Downloading TLS library... This may take a while');
@@ -89,7 +88,7 @@ class Client {
             freeMemory: this.lib.func('freeMemory', 'void', ['string']),
             destroyAll: this.lib.func('destroyAll', 'void', []),
             destroySession: this.lib.func('destroySession', 'string', ['string']),
-        }
+        };
     }
 
     startWorker() {
@@ -101,9 +100,9 @@ class Client {
     startWorkerPool() {
         return workerpool.pool(path.join(__dirname, 'client.js'), {
             workerThreadOpts: {
-                argv: [this.TLS_LIB_PATH]
-            }
-        })
+                argv: [this.TLS_LIB_PATH],
+            },
+        });
     }
 }
 
@@ -113,11 +112,11 @@ export default Client;
 if (!workerpool.isMainThread && process.argv.length > 2) {
     while (!fs.existsSync(process.argv[2])) {
         // Wait for the library to be downloaded
-        setTimeout(() => { }, 100);
+        setTimeout(() => {}, 100);
     }
 
     const client = new Client({
-        customLibraryPath: process.argv[2]
+        customLibraryPath: process.argv[2],
     });
     await client.open();
     client.startWorker();
