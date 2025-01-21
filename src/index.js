@@ -1,4 +1,4 @@
-import Client from './utils/client.js';
+import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
 
 /**
@@ -187,14 +187,24 @@ import crypto from 'node:crypto';
  */
 
 /**
- * @class TlsClient
+ * @class SessionClient
  */
-class TlsClient {
+class SessionClient {
     /**
-     * @description Create a new TlsClient
-     * @param {TlsClientDefaultOptions} options
+     * @description Create a new SessionClient
+     * @param {Object} options - SessionClient options
+     * @param {ModuleClient} moduleClient - The shared ModuleClient instance
      */
-    constructor(options) {
+    constructor(moduleClient, options = {}) {
+        if (!moduleClient)
+            throw new Error(
+                'ModuleClient must be provided. Please create a new ModuleClient instance and pass it as the first argument.'
+            );
+
+        if (!moduleClient instanceof ModuleClient) {
+            throw new Error('ModuleClient must be an instance of ModuleClient');
+        }
+
         /**
          * @type {TlsClientDefaultOptions}
          */
@@ -276,18 +286,19 @@ class TlsClient {
         };
 
         this.sessionId = crypto.randomUUID();
-        this.client = new Client(options);
+        this.moduleClient = moduleClient;
+        this.pool = null;
     }
 
     async #init() {
         if (!this.pool) {
-            await this.client.open();
-            this.pool = this.client.startWorkerPool();
+            await this.moduleClient.open();
+            this.pool = this.moduleClient.pool;
         }
     }
 
     /**
-     * @description Set the default cookies for the TlsClient
+     * @description Set the default cookies for the SessionClient
      * @param {Cookie[]} cookies
      * @returns
      */
@@ -296,7 +307,7 @@ class TlsClient {
     }
 
     /**
-     * @description Set the default headers for the TlsClient
+     * @description Set the default headers for the SessionClient
      * @param {Headers} headers
      * @returns
      */
@@ -337,19 +348,6 @@ class TlsClient {
     }
 
     /**
-     * @description Terminate the TlsClient WorkerPool
-     */
-    terminate() {
-        try {
-            this.destroySession();
-            this.client?.lib?.unload?.();
-            return this.pool?.terminate?.();
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    /**
      * @description Gets the session ID if session rotation is not enabled.
      * @returns {string|null} The session ID, or null if session rotation is enabled.
      */
@@ -363,26 +361,22 @@ class TlsClient {
      * @returns {}
      */
     async destroySession(id = this.sessionId) {
-        return await this.pool.exec('destroySession', [id]);
+        return this.#exec('destroySession', [id]);
     }
 
     /**
      * @description Frees memory associated with a given ID.
      * @param {string} id - The ID associated with the memory to free.
-     * @returns {Promise} A promise that resolves when the memory has been freed.
+     * @returns {Promise<void>}
      */
     async #freeMemory(id) {
-        return await this.pool.exec('freeMemory', [id]);
+        await this.pool.exec('freeMemory', [id]);
+
+        return;
     }
 
     async sendRequest(options) {
-        const request = JSON.parse(await this.pool.exec('request', [JSON.stringify(options)]));
-        await this.#freeMemory(request.id);
-
-        // Remove the id from the response | Useless for user
-        delete request.id;
-
-        return request;
+        return this.#exec('request', [JSON.stringify(options)]);
     }
 
     async #retryRequest(options) {
@@ -545,9 +539,7 @@ class TlsClient {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
         await this.#init();
 
-        const response = JSON.parse(
-            await this.pool.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })])
-        );
+        const response = this.#exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })]);
         await this.#freeMemory(response.id);
         delete response.id;
 
@@ -566,9 +558,7 @@ class TlsClient {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
         await this.#init();
 
-        const response = JSON.parse(
-            await this.pool.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })])
-        );
+        const response = this.#exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })]);
         await this.#freeMemory(response.id);
         delete response.id;
 
@@ -576,21 +566,24 @@ class TlsClient {
     }
 
     /**
-     * @description Rotate the session ID. [Warning: This will NOT destroy the previous session, call destroySession first]
-     * @returns {string} The new session ID.
-     */
-    rotateSession() {
-        this.sessionId = crypto.randomUUID();
-        return this.sessionId;
-    }
-
-    /**
      * @description Destroy all existing sessions in order to release allocated memory.
      * @returns {}
      */
     destroyAll() {
-        if (!this.pool) return;
-        return this.pool.exec('destroyAll', []);
+        return this.#exec('destroyAll', []);
+    }
+
+    // Method to exec and then run freeMemory
+    async #exec(func, args) {
+        await this.#init();
+        const response = JSON.parse(await this.pool.exec(func, args));
+
+        await this.#freeMemory(response.id);
+        delete response.id;
+
+        return response;
     }
 }
-export default TlsClient;
+
+export default { SessionClient, ModuleClient };
+export { SessionClient, ModuleClient };
