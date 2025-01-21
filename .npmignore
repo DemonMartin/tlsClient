@@ -1,0 +1,7 @@
+# Ignore everything by default
+*
+
+# Include specific files/folders
+!dist/
+!package.json
+!readme.md

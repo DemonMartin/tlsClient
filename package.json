@@ -1,9 +1,14 @@
 {
     "name": "tlsclientwrapper",
     "version": "1.0.2",
-    "main": "src/index.js",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "build:clean": "rm -rf ./dist",
+        "build": "npm run build:clean && tsc -b tsconfig.json",
+        "test:esm": "node ./tests/test.js",
+        "test:cjs": "node ./tests/test.cjs"
     },
     "description": "A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by @dryft/tlsclient",
     "type": "module",
@@ -46,6 +51,8 @@
         "fingerprints"
     ],
     "devDependencies": {
-        "axios": "^1.6.8"
+        "@types/node": "^22.10.7",
+        "axios": "^1.6.8",
+        "typescript": "^5.7.3"
     }
 }

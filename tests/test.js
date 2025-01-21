@@ -1,13 +1,13 @@
-import TlsDependency from '../src/utils/path.js';
-import TlsClient from '../src/index.js';
+//import TlsDependency from '../src/utils/path.js';
+import TlsClient from '../dist/index.js';
 import axios from 'axios';
 import path from 'path';
 import v8 from 'node:v8';
 import { setMaxIdleHTTPParsers } from 'http';
 
-const tlsDependency = new TlsDependency();
-const tlsDependencyPath = tlsDependency.getTLSDependencyPath();
-console.log(tlsDependencyPath);
+//const tlsDependency = new TlsDependency();
+//const tlsDependencyPath = tlsDependency.getTLSDependencyPath();
+//console.log(tlsDependencyPath);
 
 const runInnerRequests = async (tlsClient) => {
     const innerPromises = Array(1)
@@ -33,6 +33,7 @@ const runRequests = async () => {
             });
             const responseTimes = await runInnerRequests(tlsClient);
             console.log(await tlsClient.terminate());
+            tlsClient.get();
             return responseTimes;
         });
 
