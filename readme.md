@@ -2,7 +2,7 @@
 
 A wrapper for `bogdanfinn/tls-client` based on koffi for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
 
-# Installation
+## Installation
 
 With npm:
 
@@ -10,7 +10,7 @@ With npm:
 npm install tlsclientwrapper
 ```
 
-# Information
+## Information
 
 This module, compared to bogdanfinn's example, offers:
 
@@ -22,7 +22,7 @@ This module, compared to bogdanfinn's example, offers:
 6. Automatic download of the required library file.
 7. Many more enhancements!
 
-# Usage
+## Usage
 
 ### Simple Get Request
 
@@ -62,7 +62,7 @@ await client.terminate();
 
 ### TLS Request
 
-*Don't worry, all requests by default are sent imitating chrome_120 TLS*
+#### Don't worry, all requests by default are sent imitating chrome_120 TLS
 
 ```js
 import tlsClient from 'tlsclientwrapper';
@@ -194,7 +194,7 @@ await client.terminate();
  */
 ```
 
-# Additional Information
+## Additional Information
 
 For more Documentation, please check <https://bogdanfinn.gitbook.io/open-source-oasis>
 Special thanks to [@bogdanfinn](https://github.com/bogdanfinn) and [@heydryft](https://github.com/heydryft) which both did great work and helped me build this wrapper.

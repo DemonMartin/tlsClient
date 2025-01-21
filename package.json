@@ -1,51 +1,51 @@
 {
-  "name": "tlsclientwrapper",
-  "version": "1.0.2",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "description": "A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by @dryft/tlsclient",
-  "type": "module",
-  "author": "DemonMartin",
-  "license": "ISC",
-  "dependencies": {
-    "koffi": "^2.9.0",
-    "node-fetch": "^3.3.2",
-    "workerpool": "^9.1.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DemonMartin/tlsClient.git"
-  },
-  "bugs": {
-    "url": "https://github.com/DemonMartin/tlsClient/issues"
-  },
-  "homepage": "https://github.com/DemonMartin/tlsClient#readme",
-  "keywords": [
-    "tls",
-    "client",
-    "https",
-    "http",
-    "request",
-    "get",
-    "post",
-    "put",
-    "delete",
-    "patch",
-    "head",
-    "options",
-    "trace",
-    "connect",
-    "tlsclient",
-    "tls-client",
-    "tls_client",
-    "requests",
-    "httprequests",
-    "client",
-    "fingerprints"
-  ],
-  "devDependencies": {
-    "axios": "^1.6.8"
-  }
+    "name": "tlsclientwrapper",
+    "version": "1.0.2",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "description": "A wrapper for `bogdanfinn/tls-client` based on ffi-rs for unparalleled performance and usability. Inspired by @dryft/tlsclient",
+    "type": "module",
+    "author": "DemonMartin",
+    "license": "ISC",
+    "dependencies": {
+        "koffi": "^2.9.0",
+        "node-fetch": "^3.3.2",
+        "workerpool": "^9.1.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DemonMartin/tlsClient.git"
+    },
+    "bugs": {
+        "url": "https://github.com/DemonMartin/tlsClient/issues"
+    },
+    "homepage": "https://github.com/DemonMartin/tlsClient#readme",
+    "keywords": [
+        "tls",
+        "client",
+        "https",
+        "http",
+        "request",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        "head",
+        "options",
+        "trace",
+        "connect",
+        "tlsclient",
+        "tls-client",
+        "tls_client",
+        "requests",
+        "httprequests",
+        "client",
+        "fingerprints"
+    ],
+    "devDependencies": {
+        "axios": "^1.6.8"
+    }
 }
