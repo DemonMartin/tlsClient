@@ -191,7 +191,7 @@ import crypto from 'node:crypto';
 class SessionClient {
     /**
      * @description Create a new SessionClient
-     * @param {Object} options - SessionClient options
+     * @param {TlsClientDefaultOptions} options - SessionClient options
      * @param {ModuleClient} moduleClient - The shared ModuleClient instance
      */
     constructor(moduleClient, options = {}) {
@@ -406,9 +406,9 @@ class SessionClient {
 
     /**
      * @description Send a GET request
-     * @param {URL|string} url
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async get(url, options = {}) {
         return this.#request({
@@ -423,10 +423,10 @@ class SessionClient {
 
     /**
      * @description Send a POST request
-     * @param {URL|string} url
-     * @param {JSON|string} body
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {object|string} body - The request body
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async post(url, body, options = {}) {
         if (typeof body === 'object') body = JSON.stringify(body);
@@ -444,10 +444,10 @@ class SessionClient {
 
     /**
      * @description Send a PUT request
-     * @param {URL|string} url
-     * @param {JSON|string} body
-     * @param TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {object|string} body - The request body
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async put(url, body, options = {}) {
         return this.#request({
@@ -462,9 +462,9 @@ class SessionClient {
 
     /**
      * @description Send a DELETE request
-     * @param {URL|string} url
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async delete(url, options = {}) {
         return this.#request({
@@ -479,9 +479,9 @@ class SessionClient {
 
     /**
      * @description Send a HEAD request
-     * @param {URL|string} url
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async head(url, options = {}) {
         return this.#request({
@@ -496,10 +496,10 @@ class SessionClient {
 
     /**
      * @description Send a PATCH request
-     * @param {URL|string} url
-     * @param {JSON|string} body
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @param {URL|string} url - The URL to send the request to
+     * @param {object|string} body - The request body
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async patch(url, body, options = {}) {
         return this.#request({
@@ -513,10 +513,10 @@ class SessionClient {
     }
 
     /**
-     * @description Send a OPTIONS request
-     * @param {URL|string} url
-     * @param {TlsClientOptions} options
-     * @returns {Promise<TlsClientResponse>}
+     * @description Send an OPTIONS request
+     * @param {URL|string} url - The URL to send the request to
+     * @param {Partial<TlsClientOptions>} [options={}] - The request options
+     * @returns {Promise<TlsClientResponse>} The response from the server
      */
     async options(url, options = {}) {
         return this.#request({
@@ -570,12 +570,10 @@ class SessionClient {
     // Method to exec and then run freeMemory
     async #exec(func, args) {
         await this.#init();
-        const startTime = Date.now();
 
         const result = await this.pool.run({
             fn: func,
             args,
-            startTime,
         });
 
         return result;
