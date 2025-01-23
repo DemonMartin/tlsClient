@@ -34,6 +34,10 @@ class ModuleClient {
      * @param {Object} [options] - Configuration options for the ModuleClient.
      * @param {string} [options.customLibraryPath] - Path to a custom TLS library.
      * @param {string} [options.customLibraryDownloadPath] - Path to download the TLS library.
+     * @param {string} [options.maxThreads] - Maximum number of threads in the worker pool.
+     * @description Creates a new ModuleClient instance.
+     * @example const module = new ModuleClient();
+     * @example const module = new ModuleClient({ customLibraryPath: '/path/to/tls-library' });
      */
     constructor(options) {
         /** @private */
@@ -46,6 +50,8 @@ class ModuleClient {
         this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
         /** @private */
         this.pool = null;
+        /** @private */
+        this.maxThreads = options?.maxThreads ?? Math.max(os?.cpus()?.length ?? 12) * 2;
     }
 
     /**
@@ -113,6 +119,8 @@ class ModuleClient {
             maxQueue: Infinity,
             atomics: 'disabled',
             idleTimeout: 30000,
+            minThreads: 1,
+            maxThreads: this.maxThreads,
         });
     }
 
