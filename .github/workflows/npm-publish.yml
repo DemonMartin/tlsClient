@@ -20,20 +20,9 @@ jobs:
 
             # Update version based on release tag
             - run: |
-                  # Extract the release tag (e.g., v1.2.3)
-                  VERSION="${{ github.event.release.tag_name }}"
-                  # Remove the 'v' prefix (if present)
-                  VERSION="${VERSION#v}"
-                  # Set the version in package.json
+                  VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
+                  echo "Extracted version: $VERSION"
                   npm version "$VERSION" --no-git-tag-version
-
-            # Build the package
-            - run: npm run build
-
-            # Publish to npm
-            - run: npm publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
 
             # Commit and push the updated package.json
             - run: |
@@ -42,3 +31,8 @@ jobs:
                   git add package.json
                   git commit -m "Release version ${{ github.event.release.tag_name }}"
                   git push
+
+            # Publish to npm
+            - run: npm publish
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
