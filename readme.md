@@ -1,108 +1,189 @@
 # TlsClientWrapper
 
-A wrapper for `bogdanfinn/tls-client` based on koffi for unparalleled performance and usability. Inspired by `@dryft/tlsclient`.
+A high-performance Node.js wrapper for `bogdanfinn/tls-client` using Koffi bindings and worker thread pools.
+
+## Features
+
+- ⚡ Multi-threaded request handling via Piscina worker pools
+- 🔄 Automatic session management and cookie handling
+- 🛡️ Latest TLS fingerprint support (Chrome 131, Firefox 133, etc.)
+- 🔄 Built-in retry mechanism for failed requests
+- 📚 Comprehensive TypeScript definitions and JSDocs
+- 🔌 Automatic TLS library download and management
 
 ## Installation
-
-With npm:
 
 ```bash
 npm install tlsclientwrapper
 ```
 
-## Information
+## Core Concepts
 
-This module, compared to bogdanfinn's example, offers:
+### Architecture Overview
 
-1. Advanced JSDocs for faster development.
-2. Use of the more updated koffi.
-3. Automatic conversations, session support, etc.
-4. Default settings compatible with bogdafinn's client.
-5. Built-in automatic retries on specific status codes.
-6. Automatic download of the required library file.
-7. Many more enhancements!
+TlsClientWrapper uses a two-tier architecture:
 
-## Usage
+1. **ModuleClient**: Manages the worker pool and TLS library | Important: Piscana seems to share the pools by default, meaning creating multiple ones wont change anything.
+2. **SessionClient**: Handles individual TLS sessions and requests
 
-### Simple Get Request
-
-```js
-import tlsClient from 'tlsclientwrapper';
-const client = new tlsClient();
-
-console.log(await client.get("https://example.com/"));
-
-await client.terminate(); // Terminate the TlsClient WorkerPool once everything is finished.
+```plaintext
+ModuleClient (Worker Pool)
+├─ SessionClient 1
+├─ SessionClient 2
+└─ SessionClient N
 ```
 
-### Default Headers/Cookies for all Requests
+### Basic Usage
 
-```js
-import tlsClient from 'tlsclientwrapper';
-const client = new tlsClient({
+```javascript
+import { ModuleClient, SessionClient } from 'tlsclientwrapper';
+
+// 1. Create the worker pool manager
+const moduleClient = new ModuleClient();
+
+// 2. Create a session for making requests
+const session = new SessionClient(moduleClient);
+
+// 3. Make requests
+const response = await session.get('https://example.com');
+
+// 4. Clean up
+await session.destroySession();
+await moduleClient.terminate();
+```
+
+### CommonJS Usage
+
+```javascript
+// CommonJS environment requires dynamic import
+(async () => {
+    // Dynamic import for CommonJS
+    const tlsClientModule = await import('tlsclientwrapper');
+    
+    // Create the worker pool manager
+    const moduleClient = new tlsClientModule.ModuleClient({
+        maxThreads: 4
+    });
+
+    // Create a session for making requests
+    const session = new tlsClientModule.SessionClient(moduleClient);
+
+    const response = await session.get('https://example.com');
+    console.log(response);
+
+    await session.destroySession();
+    await moduleClient.terminate();
+})();
+```
+
+### Managing Multiple Sessions
+
+```javascript
+const moduleClient = new ModuleClient({
+    maxThreads: 8  // Optimize thread count (more Threads = more concurrent Requests, test whats the best for you)
+});
+
+// Create multiple sessions for different purposes
+const loginSession = new SessionClient(moduleClient, {
+    defaultHeaders: { 'User-Agent': 'Chrome/131.0.0.0' }
+});
+
+const apiSession = new SessionClient(moduleClient, {
+    defaultHeaders: { 'Authorization': 'Bearer token' }
+});
+
+// Use sessions concurrently
+await Promise.all([
+    loginSession.post('https://example.com/login', credentials),
+    apiSession.get('https://example.com/api/data')
+]);
+
+// Clean up
+await loginSession.destroySession();
+await apiSession.destroySession();
+await moduleClient.terminate();
+```
+
+### Request Options & Retry Logic
+
+```javascript
+const session = new SessionClient(moduleClient, {
+    // TLS Configuration
+    tlsClientIdentifier: 'chrome_131',
+    forceHttp1: false,
+    
+    // Retry Configuration
+    retryIsEnabled: true,
+    retryMaxCount: 3,
+    retryStatusCodes: [429, 503, 504],
+    
+    // Network Configuration
+    timeoutSeconds: 30,
+    proxyUrl: 'http://proxy:8080',
+    
+    // Default Headers & Cookies
     defaultHeaders: {
-        "Custom-Header": "Custom-Value",
-        "User-Agent": "TlsClient/1.0"
+        'User-Agent': 'Custom/1.0'
     },
-    defaultCookies: [
-        {
-            domain: "example.com",
-            expires: 0,
-            name: "testCookie",
-            path: "/",
-            value: "testValue"
-        }
-    ]
+    defaultCookies: [{
+        domain: 'example.com',
+        name: 'session',
+        value: 'xyz'
+    }]
 });
-
-console.log(await client.get("https://myhttpheader.com/"));
-
-await client.terminate();
 ```
 
-### TLS Request
+### Batch Processing
 
-#### Don't worry, all requests by default are sent imitating chrome_120 TLS
+```javascript
+const moduleClient = new ModuleClient();
+const session = new SessionClient(moduleClient);
 
-```js
-import tlsClient from 'tlsclientwrapper';
-const client = new tlsClient({
-    tlsClientIdentifier: "chrome_120" // For alternatives, check the docs or the JSDocs
-});
+// Process multiple URLs efficiently
+const urls = Array.from({ length: 100 }, 
+    (_, i) => `https://api.example.com/item/${i}`
+);
 
-console.log(await client.get("https://tls.peet.ws/api/all"));
-await client.terminate();
+// Batch requests with concurrency control
+const batchSize = 10;
+for (let i = 0; i < urls.length; i += batchSize) {
+    const batch = urls.slice(i, i + batchSize);
+    const responses = await Promise.all(
+        batch.map(url => session.get(url))
+    );
+    console.log(`Processed batch ${i/batchSize + 1}`);
+}
+
+await session.destroySession();
+await moduleClient.terminate();
 ```
 
-> For more Identifiers, check here: <https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles>
+### Monitoring & Debugging
 
-### Custom Library
+```javascript
+const moduleClient = new ModuleClient();
 
-```js
-import tlsClient from 'tlsclientwrapper';
-import path from 'node:path';
-const client = new tlsClient({
-    customLibraryPath: path.join(process.cwd(), 'lib', 'customLib.dll') // Path must be complete
-    //customLibraryDownloadPath: path.join(process.cwd(), 'lib') -> Can also be set if wanted, else os.temp or process.cwd is used.
+// Monitor worker pool performance
+setInterval(() => {
+    const stats = moduleClient.getPoolStats();
+    console.log(stats);
+}, 5000);
+
+const session = new SessionClient(moduleClient, {
+    withDebug: true  // Enable debug logging
 });
 
-console.log(await client.get("https://example.com/"));
-await client.terminate();
+// ... your requests ...
 ```
 
-> ⚠️ Warning ⚠️
->
-> - All the JSDocs are currently based on the TLSClient Version 1.7.5, if you're using a custom LibraryPath it will not update the JSDocs.
-> - Koffi might not be supported by your platform. Please check: <https://github.com/Koromix/koffi> and verify that your platform is officially supported.
+## API Reference
 
-### Constructor Options
+### ModuleClient Options
 
 ```js
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
- * @property {string|null} [customLibraryPath=null] - Path to the custom library file
- * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
  * @property {number} [retryMaxCount=3] - Maximum number of retries
  * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
@@ -137,7 +218,7 @@ await client.terminate();
  */
 ```
 
-### Additional options for overriding defaults
+### SessionClient Options
 
 ```js
 /**
@@ -179,7 +260,7 @@ await client.terminate();
 */
 ```
 
-### TlsClientReponse
+### Response Type
 
 ```js
 /**
@@ -194,7 +275,22 @@ await client.terminate();
  */
 ```
 
-## Additional Information
+## Platform Support
 
-For more Documentation, please check <https://bogdanfinn.gitbook.io/open-source-oasis>
-Special thanks to [@bogdanfinn](https://github.com/bogdanfinn) and [@heydryft](https://github.com/heydryft) which both did great work and helped me build this wrapper.
+This wrapper requires:
+
+- Node.js 16.x or later
+- Platform supported by Koffi (Windows, macOS, Linux)
+- x64, arm64, or compatible architecture
+
+## Credits
+
+Special thanks to:
+
+- [@bogdanfinn](https://github.com/bogdanfinn) for the TLS client
+- The Koffi team for the FFI bindings
+
+## Additional Resources
+
+- [TLS Client Documentation](https://bogdanfinn.gitbook.io/open-source-oasis)
+- [Supported TLS Fingerprints](https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/supported-and-tested-client-profiles)
