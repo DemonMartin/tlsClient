@@ -3,19 +3,22 @@
 
 on:
     release:
-        types: [published] # Correct event type
+        types: [published]
 
 jobs:
     publish-npm:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
+                  fetch-depth: 0
+
             - uses: actions/setup-node@v4
               with:
                   node-version: 18
                   registry-url: https://registry.npmjs.org/
 
-            # Install dependencies
             - run: npm install
 
             # Update version based on release tag
@@ -24,15 +27,15 @@ jobs:
                   echo "Extracted version: $VERSION"
                   npm version "$VERSION" --no-git-tag-version
 
-            # Commit and push the updated package.json
-            - run: |
-                  git config user.name "github-actions[bot]"
-                  git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add package.json
-                  git commit -m "Release version ${{ github.event.release.tag_name }}"
-                  git push
+            # Use actions-js/push for git operations
+            - name: Commit & Push changes
+              uses: actions-js/push@master
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  message: 'Release version ${{ github.event.release.tag_name }}'
+                  branch: main
+                  rebase: true
 
-            # Publish to npm
             - run: npm publish
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
