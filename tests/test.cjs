@@ -24,9 +24,7 @@ function logStats(module) {
             rss: `${Math.round(memoryData.rss / 1024 / 1024)}MB`,
         },
         workers: {
-            busy: poolStats?.busyWorkers ?? 0,
-            total: poolStats?.totalWorkers ?? 0,
-            pending: poolStats?.pendingTasks ?? 0,
+            ...poolStats,
         },
     });
 }
@@ -35,9 +33,11 @@ function logStats(module) {
     const tlsClientModule = await import('../src/index.js');
     const module = new tlsClientModule.ModuleClient();
 
+    // Ensure that all interactions use ModuleClient methods that communicate with the worker pool
+
     // do a single request and destroySession to init the module
     const client = new tlsClientModule.SessionClient(module);
-    await client.get('https://echo.zuplo.io/');
+    await client.get('http://localhost:6969');
     await client.destroySession();
 
     logMemoryUsage();
@@ -52,9 +52,11 @@ function logStats(module) {
         try {
             const client = new tlsClientModule.SessionClient(module);
             const startTime = Date.now();
-            const response = await client.get('https://echo.zuplo.io/');
+            const response = await client.get('http://localhost:6969');
+            //console.log(response);
             const duration = Date.now() - startTime;
             console.log(`Request ${i} completed: ${response.status} (${duration}ms)`);
+            //logStats(module);
 
             await client.destroySession();
         } catch (err) {
@@ -62,8 +64,8 @@ function logStats(module) {
         }
     };
 
-    const TOTAL_REQUESTS = 1000;
-    const BATCH_SIZE = 50; // Process 50 requests concurrently
+    const TOTAL_REQUESTS = 50000;
+    const BATCH_SIZE = 250; // Process 50 requests concurrently
 
     // Create array of request indices
     const requestIndices = Array.from({ length: TOTAL_REQUESTS }, (_, i) => i);

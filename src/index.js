@@ -84,8 +84,6 @@ import crypto from 'node:crypto';
 /**
  * @typedef {Object} TlsClientDefaultOptions
  * @property {ClientProfile} [tlsClientIdentifier='chrome_131'] - Identifier of the TLS client
- * @property {string|null} [customLibraryPath=null] - Path to the custom library file
- * @property {string|null} [customLibraryDownloadPath=null] - Path to the custom library download folder
  * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
  * @property {number} [retryMaxCount=3] - Maximum number of retries
  * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
@@ -121,6 +119,7 @@ import crypto from 'node:crypto';
 
 /**
  * @typedef {Object} TlsClientOptions
+ * @property {ClientProfile} tlsClientIdentifier - Identifier of the TLS client [default is already set on creation of Class]
  * @property {boolean} catchPanics - If true, panics will be caught
  * @property {null} certificatePinningHosts - Hosts for certificate pinning
  * @property {null} customTlsClient - Custom TLS client
@@ -139,7 +138,7 @@ import crypto from 'node:crypto';
  * @property {Object|null} defaultHeaders - Default headers
  * @property {boolean} disableIPV6 - If true, IPV6 will be disabled
  * @property {null} localAddress - Local address
- * @property {String|null} sessionId - ID of the session
+ * @property {String|null} sessionId - ID of the session [not recommended to use, use the SessionClient instead]
  * @property {string} serverNameOverwrite - Overwrite server name
  * @property {null} streamOutputBlockSize - Block size of the stream output
  * @property {null} streamOutputEOFSymbol - EOF symbol of the stream output
@@ -368,10 +367,11 @@ class SessionClient {
      * @description Frees memory associated with a given ID.
      * @param {string} id - The ID associated with the memory to free.
      * @returns {Promise<void>}
+     * @deprecated
      */
     async #freeMemory(id) {
-        await this.pool.exec('freeMemory', [id]);
-
+        // This method is now deprecated since memory management is handled in the worker
+        console.warn('Memory management is now handled directly in the worker threads');
         return;
     }
 
@@ -540,9 +540,6 @@ class SessionClient {
         await this.#init();
 
         const response = this.#exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })]);
-        await this.#freeMemory(response.id);
-        delete response.id;
-
         return response;
     }
 
@@ -559,9 +556,6 @@ class SessionClient {
         await this.#init();
 
         const response = this.#exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })]);
-        await this.#freeMemory(response.id);
-        delete response.id;
-
         return response;
     }
 
@@ -576,12 +570,15 @@ class SessionClient {
     // Method to exec and then run freeMemory
     async #exec(func, args) {
         await this.#init();
-        const response = JSON.parse(await this.pool.exec(func, args));
+        const startTime = Date.now();
 
-        await this.#freeMemory(response.id);
-        delete response.id;
+        const result = await this.pool.run({
+            fn: func,
+            args,
+            startTime,
+        });
 
-        return response;
+        return result;
     }
 }
 

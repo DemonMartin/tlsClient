@@ -1,11 +1,12 @@
 import koffi from 'koffi';
-import workerpool from 'workerpool';
+import Piscina from 'piscina';
 import TlsDependency from './path.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
+import { isMainThread } from 'worker_threads';
 
 let __filename, __dirname;
 
@@ -23,20 +24,44 @@ if (typeof __filename === 'undefined' && typeof __dirname === 'undefined') {
     }
 }
 
+/**
+ * @class ModuleClient
+ * @classdesc Manages the TLS library and worker pool.
+ */
 class ModuleClient {
+    /**
+     * @constructor
+     * @param {Object} [options] - Configuration options for the ModuleClient.
+     * @param {string} [options.customLibraryPath] - Path to a custom TLS library.
+     * @param {string} [options.customLibraryDownloadPath] - Path to download the TLS library.
+     */
     constructor(options) {
+        /** @private */
         this.customPath = options?.customLibraryPath ? true : false;
+        /** @private */
         this.tlsDependency = new TlsDependency();
+        /** @private */
         this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath(options?.customLibraryDownloadPath);
+        /** @private */
         this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
-        this.lib = null;
+        /** @private */
         this.pool = null;
     }
 
+    /**
+     * @private
+     * @description Checks if the TLS library exists.
+     * @returns {boolean} True if the library exists, false otherwise.
+     */
     libraryExists() {
         return fs.existsSync(path.join(this.TLS_LIB_PATH));
     }
 
+    /**
+     * @private
+     * @description Downloads the TLS library if it does not exist.
+     * @returns {Promise<void>}
+     */
     async downloadLibrary() {
         if (this.libraryExists()) return;
         if (this.customPath) {
@@ -63,89 +88,74 @@ class ModuleClient {
         });
     }
 
+    /**
+     * @private
+     * @description Opens the TLS library and initializes the worker pool.
+     * @returns {Promise<void>}
+     */
     async open() {
         if (this.pool) return; // Prevent repeated initializations
-        if (workerpool.isMainThread) {
+        if (isMainThread) {
             await this.downloadLibrary();
         }
-        this.lib = koffi.load(this.TLS_LIB_PATH);
         this.pool = this.startWorkerPool();
     }
 
-    createInstance() {
-        if (!this.lib) {
-            throw new Error('Library not loaded');
-        }
-        return {
-            request: this.lib.func('request', 'string', ['string']),
-            getCookiesFromSession: this.lib.func('getCookiesFromSession', 'string', ['string']),
-            addCookiesToSession: this.lib.func('addCookiesToSession', 'string', ['string']),
-            freeMemory: this.lib.func('freeMemory', 'void', ['string']),
-            destroyAll: this.lib.func('destroyAll', 'string', []),
-            destroySession: this.lib.func('destroySession', 'string', ['string']),
-        };
-    }
-
-    startWorker() {
-        const instance = this.createInstance();
-        workerpool.worker(instance);
-    }
-
+    /**
+     * @private
+     * @description Starts the worker pool.
+     * @returns {Piscina} The Piscina worker pool.
+     */
     startWorkerPool() {
-        return workerpool.pool(path.join(__dirname, 'client.js'), {
-            workerThreadOpts: {
-                argv: [this.TLS_LIB_PATH],
-                resourceLimits: {
-                    maxOldGenerationSizeMb: 128,
-                    maxYoungGenerationSizeMb: 128,
-                    stackSizeMb: 4,
-                },
-            },
-            workerType: 'thread',
-            onCreateWorker: () => {
-                console.log('[tlsClient] Worker created, current pool size:', this.pool?.stats()?.totalWorkers ?? 0);
-            },
-            onTerminateWorker: () => {
-                console.log('[tlsClient] Worker terminated, current pool size:', this.pool?.stats()?.totalWorkers ?? 0);
-            },
+        return new Piscina({
+            filename: path.join(__dirname, 'worker.js'),
+            workerData: { libraryPath: this.TLS_LIB_PATH },
+            maxQueue: Infinity,
+            atomics: 'disabled',
+            idleTimeout: 30000,
         });
     }
 
     /**
-     * @description Get current pool statistics
-     * @returns {Object} Pool statistics
+     * @typedef {Object} PoolStats
+     * @property {number} utilization - The number of active threads in the pool.
+     * @property {number} completed - The number of completed tasks.
+     * @property {number} waiting - The number of tasks waiting to be processed.
+     * @property {number} threads - The number of threads in the pool
+     */
+
+    /**
+     * @description Get current pool statistics.
+     * @returns {PoolStats|void} Pool statistics.
      */
     getPoolStats() {
-        return this.pool?.stats();
+        if (!this.pool) return null;
+        return {
+            utilization: this.pool.utilization,
+            completed: this.pool.completed,
+            waiting: this.pool.queueSize,
+            threads: this.pool.threads.length,
+        };
     }
 
+    /**
+     * @description Terminates the worker pool and unloads the TLS library.
+     * @returns {Promise<Boolean>} True if the termination was successful, false otherwise.
+     */
     async terminate() {
         try {
             if (this.pool) {
-                await this.pool.exec('destroyAll', []); // Clean up all sessions first
-                await this.pool.terminate(true); // Force terminate all workers
+                await this.pool.run({ fn: 'destroyAll', args: [] });
+                await this.pool.destroy();
                 this.pool = null;
             }
-            if (this.lib) {
-                this.lib.unload();
-                this.lib = null;
-            }
+
+            return true;
         } catch (error) {
             console.error('Error during ModuleClient termination:', error);
+            return false;
         }
     }
-}
-
-// For the workerpool to work, you need to run the following code
-if (!workerpool.isMainThread && process.argv.length > 2) {
-    while (!fs.existsSync(process.argv[2])) {
-        setTimeout(() => {}, 100);
-    }
-    const moduleClient = new ModuleClient({
-        customLibraryPath: process.argv[2],
-    });
-    await moduleClient.open();
-    moduleClient.startWorker();
 }
 
 export default ModuleClient;
