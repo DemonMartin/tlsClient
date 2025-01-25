@@ -7,6 +7,7 @@ import fetch from 'node-fetch';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { isMainThread } from 'worker_threads';
+import DownloadManager from './downloadManager.js';
 
 let __filename, __dirname;
 
@@ -73,25 +74,8 @@ class ModuleClient {
         if (this.customPath) {
             throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
         }
-        console.log('[tlsClient] Detected missing TLS library');
-        console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
-        console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
-        console.log('[tlsClient] Downloading TLS library... This may take a while');
 
-        const response = await fetch(this.tlsDependencyPath.DOWNLOAD_PATH);
-        if (!response.ok) {
-            throw new Error(`Unexpected response ${response.statusText}`);
-        }
-        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
-        response.body.pipe(fileStream);
-
-        return new Promise((resolve, reject) => {
-            fileStream.on('finish', () => {
-                console.log('[tlsClient] Successfully downloaded TLS library');
-                resolve();
-            });
-            fileStream.on('error', reject);
-        });
+        await DownloadManager.download(this.tlsDependencyPath.DOWNLOAD_PATH, this.TLS_LIB_PATH);
     }
 
     /**
