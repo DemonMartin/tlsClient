@@ -2,7 +2,7 @@ import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
 
 /**
- * @typedef {"chrome_103"|"chrome_104"|"chrome_105"|"chrome_106"|"chrome_107"|"chrome_108"|"chrome_109"|"chrome_110"|"chrome_111"|"chrome_112"|"chrome_116_PSK"|"chrome_116_PSK_PQ"|"chrome_117"|"chrome_120"|"chrome_124"|"chrome_131"|"chrome_131_PSK"} ChromeProfile
+ * @typedef {"chrome_103"|"chrome_104"|"chrome_105"|"chrome_106"|"chrome_107"|"chrome_108"|"chrome_109"|"chrome_110"|"chrome_111"|"chrome_112"|"chrome_116_PSK"|"chrome_116_PSK_PQ"|"chrome_117"|"chrome_120"|"chrome_124"|"chrome_131"|"chrome_131_PSK"|"chrome_133"|"chrome_133_PSK"} ChromeProfile
  */
 
 /**
@@ -18,7 +18,7 @@ import crypto from 'node:crypto';
  */
 
 /**
- * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"|"firefox_123"|"firefox_132"|"firefox_133"} FirefoxProfile
+ * @typedef {"firefox_102"|"firefox_104"|"firefox_105"|"firefox_106"|"firefox_108"|"firefox_110"|"firefox_117"|"firefox_120"|"firefox_123"|"firefox_132"|"firefox_133"|"firefox_135"} FirefoxProfile
  */
 
 /**
@@ -208,7 +208,7 @@ class SessionClient {
          * @type {TlsClientDefaultOptions}
          */
         this.defaultOptions = {
-            tlsClientIdentifier: 'chrome_131',
+            tlsClientIdentifier: 'chrome_133',
             catchPanics: false,
             certificatePinningHosts: null,
             customTlsClient: null,
@@ -255,7 +255,7 @@ class SessionClient {
             ],
             defaultHeaders: {
                 'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
             },
             connectHeaders: null,
             insecureSkipVerify: false,
