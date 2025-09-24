@@ -15,17 +15,20 @@ function getWorkerPath(): string {
     try {
         return require.resolve('./worker.js');
     } catch {
-        // Manual resolution based on environment
+        // Manual resolution - worker is in utils/ subdirectory
         const isESM = typeof __dirname === 'undefined';
         const workerFile = isESM ? 'worker.mjs' : 'worker.cjs';
 
         if (isESM && import.meta?.url) {
-            return path.resolve(path.dirname(fileURLToPath(import.meta.url)), workerFile);
+            // ESM: same directory as current file
+            const currentDir = path.dirname(fileURLToPath(import.meta.url));
+            return path.resolve(currentDir, workerFile);
         } else if (!isESM) {
+            // CJS: same directory as current file
             return path.resolve(__dirname, workerFile);
         } else {
-            // Fallback: assume same directory as main module
-            return path.resolve(path.dirname(process.argv[1] ?? ''), 'worker.mjs');
+            // Fallback: assume utils subdirectory in dist
+            return path.resolve(path.dirname(process.argv[1] ?? ''), 'utils', workerFile);
         }
     }
 }
