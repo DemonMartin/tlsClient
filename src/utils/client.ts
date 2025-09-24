@@ -20,12 +20,12 @@ function getWorkerPath(): string {
         const workerFile = isESM ? 'worker.mjs' : 'worker.cjs';
 
         if (isESM && import.meta?.url) {
-            // ESM: same directory as current file
+            // ESM: current file is bundled in dist/index.mjs, worker is in dist/utils/
             const currentDir = path.dirname(fileURLToPath(import.meta.url));
-            return path.resolve(currentDir, workerFile);
+            return path.resolve(currentDir, 'utils', workerFile);
         } else if (!isESM) {
-            // CJS: same directory as current file
-            return path.resolve(__dirname, workerFile);
+            // CJS: current file is bundled in dist/index.cjs, worker is in dist/utils/
+            return path.resolve(__dirname, 'utils', workerFile);
         } else {
             // Fallback: assume utils subdirectory in dist
             return path.resolve(path.dirname(process.argv[1] ?? ''), 'utils', workerFile);
