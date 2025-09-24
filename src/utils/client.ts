@@ -5,21 +5,28 @@ import fs from 'node:fs';
 import fetch from 'node-fetch';
 import os from 'node:os';
 import { isMainThread } from 'worker_threads';
+import { fileURLToPath } from 'node:url';
 
 // Remove unused variables
 
-// Determine worker path - this will be resolved at build time by tsup
+// Get worker file path for current environment
 function getWorkerPath(): string {
-    // In production builds, both formats will look for worker in the same dist structure
-    // The actual resolution will depend on the built format (.cjs vs .mjs)
+    // Try standard resolution first
     try {
-        // Try to resolve relative to current module first
         return require.resolve('./worker.js');
     } catch {
-        // Fallback for different build contexts
-        const currentDir = __dirname || path.dirname(process.argv[1] ?? '');
-        const workerFile = path.extname(process.argv[1] ?? '') === '.cjs' ? 'worker.cjs' : 'worker.mjs';
-        return path.resolve(currentDir, workerFile);
+        // Manual resolution based on environment
+        const isESM = typeof __dirname === 'undefined';
+        const workerFile = isESM ? 'worker.mjs' : 'worker.cjs';
+
+        if (isESM && import.meta?.url) {
+            return path.resolve(path.dirname(fileURLToPath(import.meta.url)), workerFile);
+        } else if (!isESM) {
+            return path.resolve(__dirname, workerFile);
+        } else {
+            // Fallback: assume same directory as main module
+            return path.resolve(path.dirname(process.argv[1] ?? ''), 'worker.mjs');
+        }
     }
 }
 
