@@ -17,8 +17,8 @@ function getWorkerPath(): string {
         return require.resolve('./worker.js');
     } catch {
         // Fallback for different build contexts
-        const currentDir = __dirname || path.dirname(process.argv[1] || '');
-        const workerFile = path.extname(process.argv[1] || '') === '.cjs' ? 'worker.cjs' : 'worker.mjs';
+        const currentDir = __dirname || path.dirname(process.argv[1] ?? '');
+        const workerFile = path.extname(process.argv[1] ?? '') === '.cjs' ? 'worker.cjs' : 'worker.mjs';
         return path.resolve(currentDir, workerFile);
     }
 }
