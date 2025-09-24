@@ -74,6 +74,73 @@ export type ClientProfile =
     | CustomClientProfile;
 
 /**
+ * Certificate compression algorithm types
+ */
+export type CertCompressionAlgorithm = 'zlib' | 'brotli' | 'zstd';
+
+/**
+ * HTTP/2 settings keys
+ */
+export type H2SettingsKey =
+    | 'HEADER_TABLE_SIZE'
+    | 'ENABLE_PUSH'
+    | 'MAX_CONCURRENT_STREAMS'
+    | 'INITIAL_WINDOW_SIZE'
+    | 'MAX_FRAME_SIZE'
+    | 'MAX_HEADER_LIST_SIZE'
+    | 'UNKNOWN_SETTING_7'
+    | 'UNKNOWN_SETTING_8'
+    | 'UNKNOWN_SETTING_9';
+
+/**
+ * Supported TLS versions
+ */
+export type SupportedVersion = 'GREASE' | '1.3' | '1.2' | '1.1' | '1.0';
+
+/**
+ * Supported signature algorithms
+ */
+export type SignatureAlgorithm =
+    | 'PKCS1WithSHA256'
+    | 'PKCS1WithSHA384'
+    | 'PKCS1WithSHA512'
+    | 'PSSWithSHA256'
+    | 'PSSWithSHA384'
+    | 'PSSWithSHA512'
+    | 'ECDSAWithP256AndSHA256'
+    | 'ECDSAWithP384AndSHA384'
+    | 'ECDSAWithP521AndSHA512'
+    | 'PKCS1WithSHA1'
+    | 'ECDSAWithSHA1'
+    | 'Ed25519'
+    | 'SHA224_RSA'
+    | 'SHA224_ECDSA';
+
+/**
+ * Key share curves
+ */
+export type KeyShareCurve =
+    | 'GREASE'
+    | 'P256'
+    | 'P384'
+    | 'P521'
+    | 'X25519'
+    | 'P256Kyber768'
+    | 'X25519Kyber512D'
+    | 'X25519Kyber768'
+    | 'X25519MLKEM768';
+
+/**
+ * KDF identifiers
+ */
+export type KdfId = 'HKDF_SHA256' | 'HKDF_SHA384' | 'HKDF_SHA512';
+
+/**
+ * AEAD identifiers
+ */
+export type AeadId = 'AEAD_AES_128_GCM' | 'AEAD_AES_256_GCM' | 'AEAD_CHACHA20_POLY1305';
+
+/**
  * Certificate pinning hosts configuration
  * @example { "example.com": ["sha256/AAAAAAAAAAAAAAAAAAAAAA=="] }
  */
@@ -85,7 +152,7 @@ export interface CertificatePinningHosts {
  * HTTP/2 stream priority parameters
  */
 export interface PriorityParam {
-    streamDependency?: number;
+    streamDep?: number;
     exclusive?: boolean;
     weight?: number;
 }
@@ -102,34 +169,33 @@ export interface PriorityFrames {
  * ECH Candidate Cipher Suite configuration
  */
 export interface CanidateCipherSuite {
-    kdfId: number;
-    aeadId: number;
+    kdfId: KdfId;
+    aeadId: AeadId;
 }
 
 /**
- * Custom TLS client configuration (advanced users only)
- * @description This is unfinished and should be updated in the future, to be better and more accurate
+ * Custom TLS client configuration for advanced fingerprint customization
  */
 export interface CustomTLSClient {
-    /** Compression algorithm for the certificate */
-    certCompressionAlgo?: string;
-    /** Connection flow */
+    /** Certificate compression algorithm */
+    certCompressionAlgo?: CertCompressionAlgorithm;
+    /** Connection flow identifier */
     connectionFlow?: number;
-    /** HTTP/2 settings */
-    h2Settings?: Record<string, number>;
-    /** Order of HTTP/2 settings */
-    h2SettingsOrder?: string[];
-    /** Priority of headers */
+    /** HTTP/2 settings map */
+    h2Settings?: Record<H2SettingsKey, number>;
+    /** Array of H2Settings keys in order */
+    h2SettingsOrder?: H2SettingsKey[];
+    /** Priority parameters for headers */
     headerPriority?: PriorityParam;
-    /** JA3 string */
+    /** JA3 fingerprint string */
     ja3String?: string;
     /** Key share curves */
-    keyShareCurves?: string[];
-    /** Priority frames */
+    keyShareCurves?: KeyShareCurve[];
+    /** Array of priority frames configuration */
     priorityFrames?: PriorityFrames[];
-    /** Supported protocols for the ALPN Extension */
+    /** List of supported protocols for the ALPN Extension */
     alpnProtocols?: string[];
-    /** Supported protocols for the ALPS Extension */
+    /** List of supported protocols for the ALPS Extension */
     alpsProtocols?: string[];
     /** List of ECH Candidate Payloads */
     ECHCandidatePayloads?: number[];
@@ -138,11 +204,11 @@ export interface CustomTLSClient {
     /** Order of pseudo headers */
     pseudoHeaderOrder?: string[];
     /** Supported algorithms for delegated credentials */
-    supportedDelegatedCredentialsAlgorithms?: string[];
+    supportedDelegatedCredentialsAlgorithms?: SignatureAlgorithm[];
     /** Supported signature algorithms */
-    supportedSignatureAlgorithms?: string[];
-    /** Supported versions */
-    supportedVersions?: string[];
+    supportedSignatureAlgorithms?: SignatureAlgorithm[];
+    /** Supported TLS versions */
+    supportedVersions?: SupportedVersion[];
 }
 
 /**
@@ -175,8 +241,10 @@ export interface TransportOptions {
 export interface Cookie {
     /** The domain of the cookie */
     domain: string;
-    /** The expiration time of the cookie */
+    /** The expiration time of the cookie (Unix timestamp) */
     expires: number;
+    /** Number of seconds the cookie is valid. If both expires and maxAge are set, maxAge has precedence */
+    maxAge?: number;
     /** The name of the cookie */
     name: string;
     /** The path of the cookie */
@@ -209,6 +277,8 @@ export interface TlsClientDefaultOptions {
     followRedirects?: boolean;
     /** If true, HTTP/1 will be forced (default: false) */
     forceHttp1?: boolean;
+    /** If true, HTTP/3 will be disabled (default: false) */
+    disableHttp3?: boolean;
     /** Order of headers */
     headerOrder?: string[];
     /** Default headers which will be used in every request */
@@ -227,6 +297,8 @@ export interface TlsClientDefaultOptions {
     proxyUrl?: string | null;
     /** Default cookies for requests */
     defaultCookies?: Cookie[] | null;
+    /** Override the request host */
+    requestHostOverride?: string | null;
     /** If true, IPV6 will be disabled (default: false) */
     disableIPV6?: boolean;
     /** If true, IPV4 will be disabled (default: false) */
@@ -360,6 +432,7 @@ export class SessionClient {
             transportOptions: null,
             followRedirects: false,
             forceHttp1: false,
+            disableHttp3: false,
             headerOrder: [
                 'host',
                 'user-agent',
@@ -408,6 +481,7 @@ export class SessionClient {
             isRotatingProxy: false,
             proxyUrl: null,
             defaultCookies: null,
+            requestHostOverride: null,
             disableIPV6: false,
             disableIPV4: false,
             localAddress: null,
@@ -457,21 +531,27 @@ export class SessionClient {
     }
 
     private combineOptions(options: Partial<TlsClientOptions>): TlsClientOptions {
-        const defaultHeaders = this.defaultOptions.defaultHeaders ?? {};
+        // Merge default headers with request headers
         const headers = {
-            ...defaultHeaders,
+            ...(this.defaultOptions.defaultHeaders ?? {}),
             ...(options.headers ?? {}),
         };
 
-        const defaultCookies = this.defaultOptions.defaultCookies ?? [];
-        const requestCookies = [...defaultCookies, ...(options.requestCookies ?? [])];
+        // Merge default cookies with request cookies
+        const requestCookies = [...(this.defaultOptions.defaultCookies ?? []), ...(options.requestCookies ?? [])];
+
+        // Exclude defaultHeaders and defaultCookies from being sent to Go backend
+        const {
+            defaultHeaders: _defaultHeaders,
+            defaultCookies: _defaultCookies,
+            ...baseOptions
+        } = this.defaultOptions;
 
         return {
-            ...this.defaultOptions,
+            ...baseOptions,
             ...options,
             headers,
             requestCookies,
-            // Remove the headers and cookies from the default options
         };
     }
 
