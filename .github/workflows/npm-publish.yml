@@ -12,12 +12,17 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 8
             - uses: actions/setup-node@v4
               with:
                   node-version: 18
                   registry-url: https://registry.npmjs.org/
-            - run: npm i
-            - run: npm version ${{ github.event.release.tag_name }} --git-tag-version false
-            - run: npm publish
+                  cache: 'pnpm'
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm build
+            - run: pnpm version ${{ github.event.release.tag_name }} --git-tag-version false
+            - run: pnpm publish --no-git-checks
               env:
                   NODE_AUTH_TOKEN: ${{secrets.npm_token}}
