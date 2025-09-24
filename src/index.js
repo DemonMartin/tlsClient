@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
  */
 
 /**
- * @typedef {"safari_ios_15_5"|"safari_ios_15_6"|"safari_ios_16_0"|"safari_ios_17_0"|"safari_ios_18_0"} SafariIOSProfile
+ * @typedef {"safari_ios_15_5"|"safari_ios_15_6"|"safari_ios_16_0"|"safari_ios_17_0"|"safari_ios_18_0"|"safari_ios_18_5"} SafariIOSProfile
  */
 
 /**
