@@ -2,4 +2,3 @@ node_modules
 package-lock.json
 /heapdump
 /dist
-/pnpm-lock.yaml
