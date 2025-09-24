@@ -1,6 +1,7 @@
 # TlsClientWrapper
 
 A high-performance Node.js wrapper for `bogdanfinn/tls-client` using Koffi bindings and worker thread pools.
+Now with TypeScript Support.
 
 ## Features
 
@@ -8,13 +9,15 @@ A high-performance Node.js wrapper for `bogdanfinn/tls-client` using Koffi bindi
 - 🔄 Automatic session management and cookie handling
 - 🛡️ Latest TLS fingerprint support (Chrome 131, Firefox 133, etc.)
 - 🔄 Built-in retry mechanism for failed requests
-- 📚 Comprehensive TypeScript definitions and JSDocs
+- 📚 Full TypeScript support and proper JSDocs for ESM and CJS support
 - 🔌 Automatic TLS library download and management
 
 ## Installation
 
 ```bash
 npm install tlsclientwrapper
+# or
+pnpm add tlsclientwrapper
 ```
 
 ## Core Concepts
@@ -35,7 +38,9 @@ ModuleClient (Worker Pool)
 
 ### Basic Usage
 
-```javascript
+Now TypeScript, ESM and CJS are supported.
+
+```typescript
 import { ModuleClient, SessionClient } from 'tlsclientwrapper';
 
 // 1. Create the worker pool manager
@@ -50,30 +55,6 @@ const response = await session.get('https://example.com');
 // 4. Clean up
 await session.destroySession();
 await moduleClient.terminate();
-```
-
-### CommonJS Usage
-
-```javascript
-// CommonJS environment requires dynamic import
-(async () => {
-    // Dynamic import for CommonJS
-    const tlsClientModule = await import('tlsclientwrapper');
-    
-    // Create the worker pool manager
-    const moduleClient = new tlsClientModule.ModuleClient({
-        maxThreads: 4
-    });
-
-    // Create a session for making requests
-    const session = new tlsClientModule.SessionClient(moduleClient);
-
-    const response = await session.get('https://example.com');
-    console.log(response);
-
-    await session.destroySession();
-    await moduleClient.terminate();
-})();
 ```
 
 ### Managing Multiple Sessions
@@ -110,7 +91,6 @@ await moduleClient.terminate();
 const session = new SessionClient(moduleClient, {
     // TLS Configuration
     tlsClientIdentifier: 'chrome_131',
-    forceHttp1: false,
     
     // Retry Configuration
     retryIsEnabled: true,
@@ -178,102 +158,7 @@ const session = new SessionClient(moduleClient, {
 
 ## API Reference
 
-### ModuleClient Options
-
-```js
-/**
- * @typedef {Object} TlsClientDefaultOptions
- * @property {ClientProfile} [tlsClientIdentifier='chrome_124'] - Identifier of the TLS client
- * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
- * @property {number} [retryMaxCount=3] - Maximum number of retries
- * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
- * @property {boolean} [catchPanics=false] - If true, panics will be caught
- * @property {certificatePinningHosts|null} [certificatePinningHosts=null] - Hosts for certificate pinning
- * @property {CustomTLSClient|null} [customTlsClient=null] - Custom TLS client
- * @property {TransportOptions|null} [transportOptions=null] - Transport options
- * @property {boolean} [followRedirects=false] - If true, redirects will be followed
- * @property {boolean} [forceHttp1=false] - If true, HTTP/1 will be forced
- * @property {string[]} [headerOrder=["host", "user-agent", "accept", "accept-language", "accept-encoding", "connection", "upgrade-insecure-requests", "if-modified-since", "cache-control", "dnt", "content-length", "content-type", "range", "authorization", "x-real-ip", "x-forwarded-for", "x-requested-with", "x-csrf-token", "x-request-id", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "origin", "referer", "pragma", "max-forwards", "x-http-method-override", "if-unmodified-since", "if-none-match", "if-match", "if-range", "accept-datetime"]] - Order of headers
- * @property {Object|null} [defaultHeaders=Object] - default headers which will be used in every request - Default: UserAgent Chrome v124
- * @property {Object|null} [connectHeaders=null] - Headers to be used during the CONNECT request.
- * @property {boolean} [insecureSkipVerify=false] - If true, insecure verification will be skipped
- * @property {boolean} [isByteRequest=false] - If true, the request is a byte request
- * @property {boolean} [isByteResponse=false] - If true, the response is a byte response
- * @property {boolean} [isRotatingProxy=false] - If true, the proxy is rotating
- * @property {String|null} [proxyUrl=null] - URL of the proxy. Example: http://user:password@ip:port
- * @property {Cookie[]|null} [defaultCookies=null] - Cookies of the request
- * @property {boolean} [disableIPV6=false] - If true, IPV6 will be disabled
- * @property {boolean} [disableIPV4=false] - If true, IPV4 will be disabled
- * @property {null} [localAddress=null] - Local address [not Sure? Docs are not clear]
- * @property {string} [serverNameOverwrite=''] - Lookup https://bogdanfinn.gitbook.io/open-source-oasis/tls-client/client-options
- * @property {null} streamOutputBlockSize - Block size of the stream output
- * @property {null} streamOutputEOFSymbol - EOF symbol of the stream output
- * @property {null} streamOutputPath - Path of the stream output
- * @property {number} [timeoutMilliseconds=0] - Timeout in milliseconds
- * @property {number} [timeoutSeconds=60] - Timeout in seconds
- * @property {boolean} [withDebug=false] - If true, debug mode is enabled
- * @property {boolean} [withDefaultCookieJar=true] - If true, the default cookie jar is used
- * @property {boolean} [withoutCookieJar=false] - If true, the cookie jar is not used
- * @property {boolean} [withRandomTLSExtensionOrder=true] - If true, the order of TLS extensions is randomized
- */
-```
-
-### SessionClient Options
-
-```js
-/**
- * @typedef {Object} TlsClientOptions
- * @property {boolean} catchPanics - If true, panics will be caught
- * @property {null} certificatePinningHosts - Hosts for certificate pinning
- * @property {null} customTlsClient - Custom TLS client
- * @property {null} transportOptions - Transport options
- * @property {boolean} followRedirects - If true, redirects will be followed
- * @property {boolean} forceHttp1 - If true, HTTP/1 will be forced
- * @property {null} headerOrder - Order of headers
- * @property {null} headers - Headers
- * @property {boolean} insecureSkipVerify - If true, insecure verification will be skipped
- * @property {boolean} isByteRequest -  When you set isByteRequest to true the request body needs to be a base64 encoded string. Useful when you want to upload images for example.
- * @property {boolean} isByteResponse - When you set isByteResponse to true the response body will be a base64 encoded string. Useful when you want to download images for example.
- * @property {boolean} isRotatingProxy - If true, the proxy is rotating
- * @property {null} proxyUrl - URL of the proxy
- * @property {null} requestBody - Body of the request
- * @property {null} requestCookies - Cookies of the request
- * @property {null} defaultHeaders - Default headers
- * @property {boolean} disableIPV6 - If true, IPV6 will be disabled
- * @property {null} localAddress - Local address
- * @property {null} sessionId - ID of the session
- * @property {string} serverNameOverwrite - Overwrite server name
- * @property {null} streamOutputBlockSize - Block size of the stream output
- * @property {null} streamOutputEOFSymbol - EOF symbol of the stream output
- * @property {null} streamOutputPath - Path of the stream output
- * @property {number} timeoutMilliseconds - Timeout in milliseconds
- * @property {number} timeoutSeconds - Timeout in seconds
- * @property {string} tlsClientIdentifier - Identifier of the TLS client
- * @property {boolean} withDebug - If true, debug mode is enabled
- * @property {boolean} withDefaultCookieJar - If true, the default cookie jar is used
- * @property {boolean} withoutCookieJar - If true, the cookie jar is not used
- * @property {boolean} withRandomTLSExtensionOrder - If true, the order of TLS extensions is randomized
- * Custom configurable options for the TLS client
- * @property {boolean} [retryIsEnabled=true] - If true, wrapper will retry the request based on retryStatusCodes
- * @property {number} [retryMaxCount=3] - Maximum number of retries
- * @property {number[]} [retryStatusCodes=[408, 429, 500, 502, 503, 504, 521, 522, 523, 524]] - Status codes for retries
-*/
-```
-
-### Response Type
-
-```js
-/**
- * @typedef {Object} TlsClientResponse
- * @property {string} sessionId - The reusable sessionId if provided on the request
- * @property {number} status - The status code of the response
- * @property {string} target - The target URL of the request
- * @property {string} body - The response body as a string, or the error message
- * @property {Object} headers - The headers of the response
- * @property {Object} cookies - The cookies of the response
- * @property {number} retryCount - The number of retries
- */
-```
+For detailed API documentation and type information, explore the source code or use an editor with TypeScript Intellisense support. All public classes and methods are fully typed and documented for easy discovery.
 
 ## Platform Support
 

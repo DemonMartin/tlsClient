@@ -1,91 +1,122 @@
-import koffi from 'koffi';
 import Piscina from 'piscina';
 import TlsDependency from './path.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import fetch from 'node-fetch';
-import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { isMainThread } from 'worker_threads';
 
-let __filename, __dirname;
+// Remove unused variables
 
-if (typeof __filename === 'undefined' && typeof __dirname === 'undefined') {
-    if (typeof require !== 'undefined' && require.main) {
-        // CommonJS environment
-        __filename = __filename || __filename;
-        __dirname = __dirname || path.dirname(__filename);
-    } else if (typeof import.meta.url !== 'undefined') {
-        // ESM environment
-        __filename = fileURLToPath(import.meta.url);
-        __dirname = path.dirname(__filename);
-    } else {
-        throw new Error('Failed setting __filename and __dirname... Please report this to the Developer.');
+// Determine worker path - this will be resolved at build time by tsup
+function getWorkerPath(): string {
+    // In production builds, both formats will look for worker in the same dist structure
+    // The actual resolution will depend on the built format (.cjs vs .mjs)
+    try {
+        // Try to resolve relative to current module first
+        return require.resolve('./worker.js');
+    } catch {
+        // Fallback for different build contexts
+        const currentDir = __dirname || path.dirname(process.argv[1] || '');
+        const workerFile = path.extname(process.argv[1] || '') === '.cjs' ? 'worker.cjs' : 'worker.mjs';
+        return path.resolve(currentDir, workerFile);
     }
 }
 
 /**
- * @class ModuleClient
+ * Configuration options for the ModuleClient
+ */
+export interface ModuleClientOptions {
+    /** Path to a custom TLS library */
+    customLibraryPath?: string;
+    /** Path to download the TLS library */
+    customLibraryDownloadPath?: string;
+    /** Maximum number of threads in the worker pool */
+    maxThreads?: number;
+}
+
+/**
+ * Statistics about the worker pool
+ */
+export interface PoolStats {
+    /** The number of active threads in the pool */
+    utilization: number;
+    /** The number of completed tasks */
+    completed: number;
+    /** The number of tasks waiting to be processed */
+    waiting: number;
+    /** The number of threads in the pool */
+    threads: number;
+}
+
+/**
  * @classdesc Manages the TLS library and worker pool.
  */
 class ModuleClient {
+    private readonly customPath: boolean;
+    private readonly tlsDependency: TlsDependency;
+    private readonly tlsDependencyPath: ReturnType<TlsDependency['getTLSDependencyPath']> | undefined;
+    private readonly TLS_LIB_PATH: string;
+    private readonly maxThreads: number;
+
+    public pool: Piscina | null = null;
+
     /**
-     * @constructor
-     * @param {Object} [options] - Configuration options for the ModuleClient.
-     * @param {string} [options.customLibraryPath] - Path to a custom TLS library.
-     * @param {string} [options.customLibraryDownloadPath] - Path to download the TLS library.
-     * @param {string} [options.maxThreads] - Maximum number of threads in the worker pool.
      * @description Creates a new ModuleClient instance.
+     * @param {ModuleClientOptions} [options] - Configuration options for the ModuleClient
      * @example const module = new ModuleClient();
      * @example const module = new ModuleClient({ customLibraryPath: '/path/to/tls-library' });
      */
-    constructor(options) {
-        /** @private */
+    constructor(options?: ModuleClientOptions) {
         this.customPath = options?.customLibraryPath ? true : false;
-        /** @private */
         this.tlsDependency = new TlsDependency();
-        /** @private */
         this.tlsDependencyPath = this.tlsDependency.getTLSDependencyPath(options?.customLibraryDownloadPath);
-        /** @private */
-        this.TLS_LIB_PATH = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
-        /** @private */
-        this.pool = null;
-        /** @private */
-        this.maxThreads = options?.maxThreads ?? Math.max(os?.cpus()?.length ?? 12) * 2;
+        const libPath = this.customPath ? options?.customLibraryPath : this.tlsDependencyPath?.TLS_LIB_PATH;
+        if (!libPath) {
+            throw new Error('TLS library path not available');
+        }
+        this.TLS_LIB_PATH = libPath;
+        this.maxThreads = options?.maxThreads ?? Math.max(os.cpus()?.length ?? 12, 1) * 2;
     }
 
     /**
-     * @private
      * @description Checks if the TLS library exists.
      * @returns {boolean} True if the library exists, false otherwise.
      */
-    libraryExists() {
+    private libraryExists(): boolean {
         return fs.existsSync(path.join(this.TLS_LIB_PATH));
     }
 
     /**
-     * @private
      * @description Downloads the TLS library if it does not exist.
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} Promise that resolves when the library is downloaded
      */
-    async downloadLibrary() {
+    private async downloadLibrary(): Promise<void> {
         if (this.libraryExists()) return;
+
         if (this.customPath) {
             throw new Error('Custom path provided but library does not exist: ' + this.TLS_LIB_PATH);
         }
+
         console.log('[tlsClient] Detected missing TLS library');
-        console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath.DOWNLOAD_PATH);
+        console.log('[tlsClient] DownloadPath: ' + this.tlsDependencyPath?.DOWNLOAD_PATH);
         console.log('[tlsClient] DestinationPath: ' + this.TLS_LIB_PATH);
         console.log('[tlsClient] Downloading TLS library... This may take a while');
 
-        const response = await fetch(this.tlsDependencyPath.DOWNLOAD_PATH);
+        const downloadPath = this.tlsDependencyPath?.DOWNLOAD_PATH;
+        if (!downloadPath) {
+            throw new Error('Download path not available');
+        }
+
+        const response = await fetch(downloadPath);
         if (!response.ok) {
             throw new Error(`Unexpected response ${response.statusText}`);
         }
-        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
-        response.body.pipe(fileStream);
 
-        return new Promise((resolve, reject) => {
+        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
+        response.body?.pipe(fileStream);
+
+        return new Promise<void>((resolve, reject) => {
             fileStream.on('finish', () => {
                 console.log('[tlsClient] Successfully downloaded TLS library');
                 resolve();
@@ -95,26 +126,26 @@ class ModuleClient {
     }
 
     /**
-     * @private
      * @description Opens the TLS library and initializes the worker pool.
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} Promise that resolves when the library is opened and pool is initialized
      */
-    async open() {
+    async open(): Promise<void> {
         if (this.pool) return; // Prevent repeated initializations
+
         if (isMainThread) {
             await this.downloadLibrary();
         }
+
         this.pool = this.startWorkerPool();
     }
 
     /**
-     * @private
      * @description Starts the worker pool.
      * @returns {Piscina} The Piscina worker pool.
      */
-    startWorkerPool() {
+    private startWorkerPool(): Piscina {
         return new Piscina({
-            filename: path.join(__dirname, 'worker.js'),
+            filename: getWorkerPath(),
             workerData: { libraryPath: this.TLS_LIB_PATH },
             maxQueue: Infinity,
             atomics: 'disabled',
@@ -125,19 +156,12 @@ class ModuleClient {
     }
 
     /**
-     * @typedef {Object} PoolStats
-     * @property {number} utilization - The number of active threads in the pool.
-     * @property {number} completed - The number of completed tasks.
-     * @property {number} waiting - The number of tasks waiting to be processed.
-     * @property {number} threads - The number of threads in the pool
-     */
-
-    /**
      * @description Get current pool statistics.
-     * @returns {PoolStats|void} Pool statistics.
+     * @returns {PoolStats | null} Pool statistics.
      */
-    getPoolStats() {
+    getPoolStats(): PoolStats | null {
         if (!this.pool) return null;
+
         return {
             utilization: this.pool.utilization,
             completed: this.pool.completed,
@@ -148,9 +172,9 @@ class ModuleClient {
 
     /**
      * @description Terminates the worker pool and unloads the TLS library.
-     * @returns {Promise<Boolean>} True if the termination was successful, false otherwise.
+     * @returns {Promise<boolean>} True if the termination was successful, false otherwise.
      */
-    async terminate() {
+    async terminate(): Promise<boolean> {
         try {
             if (this.pool) {
                 await this.pool.run({ fn: 'destroyAll', args: [] });
