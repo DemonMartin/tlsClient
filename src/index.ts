@@ -402,7 +402,7 @@ export interface CookieResponse {
  * SessionClient class for managing TLS client sessions
  */
 export class SessionClient {
-    private readonly defaultOptions: Required<TlsClientDefaultOptions>;
+    public defaultOptions: TlsClientDefaultOptions;
     private readonly sessionId: string;
     private readonly moduleClient: ModuleClient;
     private pool: Piscina | null = null;
@@ -517,7 +517,7 @@ export class SessionClient {
      * @param {Cookie[]} cookies - Array of cookies to set as defaults
      * @returns {void}
      */
-    setDefaultCookies(cookies: Cookie[]): void {
+    public setDefaultCookies(cookies: Cookie[]): void {
         this.defaultOptions.defaultCookies = cookies;
     }
 
@@ -526,7 +526,7 @@ export class SessionClient {
      * @param {Record<string, string>} headers - Object containing header key-value pairs
      * @returns {void}
      */
-    setDefaultHeaders(headers: Record<string, string>): void {
+    public setDefaultHeaders(headers: Record<string, string>): void {
         this.defaultOptions.defaultHeaders = headers;
     }
 
@@ -569,7 +569,7 @@ export class SessionClient {
      * @description Gets the session ID if session rotation is not enabled.
      * @returns {string} The session ID, or null if session rotation is enabled.
      */
-    getSession(): string {
+    public getSession(): string {
         return this.sessionId;
     }
 
@@ -578,7 +578,7 @@ export class SessionClient {
      * @param {string} [id=this.sessionId] - The ID associated with the memory to free.
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
-    async destroySession(id: string = this.sessionId): Promise<unknown> {
+    public async destroySession(id: string = this.sessionId): Promise<unknown> {
         return this.exec('destroySession', [id]);
     }
 
@@ -617,7 +617,7 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async get(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async get(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -635,7 +635,11 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async post(url: URL | string, body: unknown, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async post(
+        url: URL | string,
+        body: unknown,
+        options: Partial<TlsClientOptions> = {}
+    ): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -653,7 +657,11 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async put(url: URL | string, body: unknown, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async put(
+        url: URL | string,
+        body: unknown,
+        options: Partial<TlsClientOptions> = {}
+    ): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -670,7 +678,7 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async delete(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async delete(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -687,7 +695,7 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async head(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async head(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -705,7 +713,11 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async patch(url: URL | string, body: unknown, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async patch(
+        url: URL | string,
+        body: unknown,
+        options: Partial<TlsClientOptions> = {}
+    ): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -722,7 +734,7 @@ export class SessionClient {
      * @param {Partial<TlsClientOptions>} [options={}] - The request options
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
-    async options(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
+    public async options(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
         return this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
@@ -739,7 +751,7 @@ export class SessionClient {
      * @param {string} url - The URL to get cookies for.
      * @returns {Promise<CookieResponse>} Promise that resolves to the cookie response
      */
-    async getCookiesFromSession(sessionId: string, url: string): Promise<CookieResponse> {
+    public async getCookiesFromSession(sessionId: string, url: string): Promise<CookieResponse> {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
         await this.init();
 
@@ -755,7 +767,7 @@ export class SessionClient {
      * @param {Cookie[]} cookies - The cookies to add.
      * @returns {Promise<CookieResponse>} Promise that resolves to the cookie response
      */
-    async addCookiesToSession(sessionId: string, url: string, cookies: Cookie[]): Promise<CookieResponse> {
+    public async addCookiesToSession(sessionId: string, url: string, cookies: Cookie[]): Promise<CookieResponse> {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
         await this.init();
 
@@ -767,7 +779,7 @@ export class SessionClient {
      * @description Destroy all existing sessions in order to release allocated memory.
      * @returns {Promise<unknown>} Promise that resolves when all sessions are destroyed
      */
-    destroyAll(): Promise<unknown> {
+    public destroyAll(): Promise<unknown> {
         return this.exec('destroyAll', []);
     }
 
