@@ -1,0 +1,45 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "options": {
+        "typeAware": true
+    },
+    "plugins": ["typescript", "unicorn", "oxc"],
+    "rules": {
+        "typescript/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ],
+        "typescript/no-explicit-any": "error",
+        "typescript/no-unsafe-assignment": "error",
+        "typescript/no-unsafe-member-access": "error",
+        "typescript/no-unsafe-call": "error",
+        "typescript/no-unsafe-return": "error",
+        "typescript/no-unsafe-argument": "error",
+        "typescript/no-non-null-assertion": "error",
+        "typescript/no-floating-promises": "error",
+        "typescript/prefer-nullish-coalescing": "error",
+        "typescript/restrict-template-expressions": "error",
+        "typescript/array-type": [
+            "error",
+            {
+                "default": "array"
+            }
+        ],
+        "typescript/require-await": "error",
+        "typescript/return-await": ["error", "always"]
+    },
+    "ignorePatterns": [
+        "node_modules/**",
+        "**/node_modules/**",
+        "pnpm-lock.yaml",
+        "dist/**",
+        "coverage/**",
+        "tests/**",
+        "tsup.config.ts",
+        "**/*.d.ts"
+    ]
+}

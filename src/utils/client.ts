@@ -2,35 +2,12 @@ import Piscina from 'piscina';
 import TlsDependency from './path.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import fetch from 'node-fetch';
+import { writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { isMainThread } from 'worker_threads';
-import { fileURLToPath } from 'node:url';
-
-// Remove unused variables
-
-// Get worker file path for current environment
 function getWorkerPath(): string {
-    // Try standard resolution first
-    try {
-        return require.resolve('./worker.js');
-    } catch {
-        // Manual resolution - worker is in utils/ subdirectory
-        const isESM = typeof __dirname === 'undefined';
-        const workerFile = isESM ? 'worker.mjs' : 'worker.cjs';
-
-        if (isESM && import.meta?.url) {
-            // ESM: current file is bundled in dist/index.mjs, worker is in dist/utils/
-            const currentDir = path.dirname(fileURLToPath(import.meta.url));
-            return path.resolve(currentDir, 'utils', workerFile);
-        } else if (!isESM) {
-            // CJS: current file is bundled in dist/index.cjs, worker is in dist/utils/
-            return path.resolve(__dirname, 'utils', workerFile);
-        } else {
-            // Fallback: assume utils subdirectory in dist
-            return path.resolve(path.dirname(process.argv[1] ?? ''), 'utils', workerFile);
-        }
-    }
+    const ext = typeof __dirname !== 'undefined' && __filename.endsWith('.cjs') ? 'cjs' : 'mjs';
+    return path.resolve(__dirname, 'utils', `worker.${ext}`);
 }
 
 /**
@@ -122,17 +99,8 @@ class ModuleClient {
         if (!response.ok) {
             throw new Error(`Unexpected response ${response.statusText}`);
         }
-
-        const fileStream = fs.createWriteStream(this.TLS_LIB_PATH);
-        response.body?.pipe(fileStream);
-
-        return new Promise<void>((resolve, reject) => {
-            fileStream.on('finish', () => {
-                console.log('[tlsClient] Successfully downloaded TLS library');
-                resolve();
-            });
-            fileStream.on('error', reject);
-        });
+        await writeFile(this.TLS_LIB_PATH, Buffer.from(await response.arrayBuffer()));
+        console.log('[tlsClient] Successfully downloaded TLS library');
     }
 
     /**

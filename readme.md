@@ -61,22 +61,22 @@ await moduleClient.terminate();
 
 ```javascript
 const moduleClient = new ModuleClient({
-    maxThreads: 8  // Optimize thread count (more Threads = more concurrent Requests, test whats the best for you)
+    maxThreads: 8, // Optimize thread count (more Threads = more concurrent Requests, test whats the best for you)
 });
 
 // Create multiple sessions for different purposes
 const loginSession = new SessionClient(moduleClient, {
-    defaultHeaders: { 'User-Agent': 'Chrome/131.0.0.0' }
+    defaultHeaders: { 'User-Agent': 'Chrome/131.0.0.0' },
 });
 
 const apiSession = new SessionClient(moduleClient, {
-    defaultHeaders: { 'Authorization': 'Bearer token' }
+    defaultHeaders: { Authorization: 'Bearer token' },
 });
 
 // Use sessions concurrently
 await Promise.all([
     loginSession.post('https://example.com/login', credentials),
-    apiSession.get('https://example.com/api/data')
+    apiSession.get('https://example.com/api/data'),
 ]);
 
 // Clean up
@@ -91,25 +91,27 @@ await moduleClient.terminate();
 const session = new SessionClient(moduleClient, {
     // TLS Configuration
     tlsClientIdentifier: 'chrome_131',
-    
+
     // Retry Configuration
     retryIsEnabled: true,
     retryMaxCount: 3,
     retryStatusCodes: [429, 503, 504],
-    
+
     // Network Configuration
     timeoutSeconds: 30,
     proxyUrl: 'http://proxy:8080',
-    
+
     // Default Headers & Cookies
     defaultHeaders: {
-        'User-Agent': 'Custom/1.0'
+        'User-Agent': 'Custom/1.0',
     },
-    defaultCookies: [{
-        domain: 'example.com',
-        name: 'session',
-        value: 'xyz'
-    }]
+    defaultCookies: [
+        {
+            domain: 'example.com',
+            name: 'session',
+            value: 'xyz',
+        },
+    ],
 });
 ```
 
@@ -120,18 +122,14 @@ const moduleClient = new ModuleClient();
 const session = new SessionClient(moduleClient);
 
 // Process multiple URLs efficiently
-const urls = Array.from({ length: 100 }, 
-    (_, i) => `https://api.example.com/item/${i}`
-);
+const urls = Array.from({ length: 100 }, (_, i) => `https://api.example.com/item/${i}`);
 
 // Batch requests with concurrency control
 const batchSize = 10;
 for (let i = 0; i < urls.length; i += batchSize) {
     const batch = urls.slice(i, i + batchSize);
-    const responses = await Promise.all(
-        batch.map(url => session.get(url))
-    );
-    console.log(`Processed batch ${i/batchSize + 1}`);
+    const responses = await Promise.all(batch.map((url) => session.get(url)));
+    console.log(`Processed batch ${i / batchSize + 1}`);
 }
 
 await session.destroySession();
@@ -150,7 +148,7 @@ setInterval(() => {
 }, 5000);
 
 const session = new SessionClient(moduleClient, {
-    withDebug: true  // Enable debug logging
+    withDebug: true, // Enable debug logging
 });
 
 // ... your requests ...

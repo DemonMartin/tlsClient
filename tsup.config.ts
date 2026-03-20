@@ -23,6 +23,7 @@ export default defineConfig([
         target: 'es2022',
         platform: 'node',
         tsconfig: './tsconfig.json',
+        shims: true,
         cjsInterop: true,
         keepNames: true,
         skipNodeModulesBundle: true,

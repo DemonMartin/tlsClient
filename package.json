@@ -2,10 +2,47 @@
     "name": "tlsclientwrapper",
     "version": "1.0.2",
     "description": "A wrapper for `bogdanfinn/tls-client` based on koffi for unparalleled performance and usability. Inspired by @dryft/tlsclient",
+    "keywords": [
+        "client",
+        "connect",
+        "delete",
+        "fingerprints",
+        "get",
+        "head",
+        "http",
+        "httprequests",
+        "https",
+        "options",
+        "patch",
+        "post",
+        "put",
+        "request",
+        "requests",
+        "tls",
+        "tls-client",
+        "tls_client",
+        "tlsclient",
+        "trace"
+    ],
+    "homepage": "https://github.com/DemonMartin/tlsClient#readme",
+    "bugs": {
+        "url": "https://github.com/DemonMartin/tlsClient/issues"
+    },
+    "license": "ISC",
+    "author": "DemonMartin",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DemonMartin/tlsClient.git"
+    },
+    "files": [
+        "dist/**/*",
+        "src/**/*",
+        "README.md"
+    ],
     "type": "module",
-    "types": "dist/index.d.ts",
     "main": "dist/index.cjs",
     "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
     "exports": {
         ".": {
             "import": {
@@ -24,70 +61,32 @@
             "require": "./dist/*.cjs"
         }
     },
-    "files": [
-        "dist/**/*",
-        "src/**/*",
-        "README.md"
-    ],
-    "engines": {
-        "node": ">=16.0.0"
-    },
     "scripts": {
         "build": "tsup",
         "type-check": "tsc --noEmit",
-        "lint": "eslint . --ext .ts,.js,.mts,.cts",
+        "lint": "oxlint --type-aware",
+        "lint:fix": "oxlint --type-aware --fix",
+        "format": "oxfmt .",
+        "format:check": "oxfmt . --check",
         "test:simple_request": "tsx tests/test.simple_request.ts",
         "test:simple_request:cjs": "node tests/test.simple_request.cjs"
     },
-    "author": "DemonMartin",
-    "license": "ISC",
     "dependencies": {
-        "koffi": "^2.15.1",
-        "node-fetch": "^2.7.0",
+        "koffi": "^2.15.2",
         "piscina": "^5.1.4"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.2",
-        "@types/node": "^22.19.7",
-        "@types/node-fetch": "^2.6.13",
-        "@typescript-eslint/eslint-plugin": "^8.54.0",
-        "@typescript-eslint/parser": "^8.54.0",
-        "axios": "^1.13.4",
-        "eslint": "^9.39.2",
+        "@types/node": "^22.19.15",
+        "axios": "^1.13.6",
+        "oxfmt": "^0.41.0",
+        "oxlint": "^1.56.0",
+        "oxlint-tsgolint": "^0.17.1",
         "tsup": "^8.5.1",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/DemonMartin/tlsClient.git"
+    "engines": {
+        "node": ">=18.0.0"
     },
-    "bugs": {
-        "url": "https://github.com/DemonMartin/tlsClient/issues"
-    },
-    "homepage": "https://github.com/DemonMartin/tlsClient#readme",
-    "keywords": [
-        "tls",
-        "client",
-        "https",
-        "http",
-        "request",
-        "get",
-        "post",
-        "put",
-        "delete",
-        "patch",
-        "head",
-        "options",
-        "trace",
-        "connect",
-        "tlsclient",
-        "tls-client",
-        "tls_client",
-        "requests",
-        "httprequests",
-        "client",
-        "fingerprints"
-    ],
     "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
 }

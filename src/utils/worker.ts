@@ -54,7 +54,7 @@ export default async function handler(task: WorkerTask): Promise<unknown> {
 
         // Free memory immediately if needed
         if (parsedResult.id && 'freeMemory' in instance && typeof instance.freeMemory === 'function') {
-            await (instance.freeMemory as (id: string) => void)(parsedResult.id);
+            (instance.freeMemory as (id: string) => void)(parsedResult.id);
             delete parsedResult.id;
         }
 

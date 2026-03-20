@@ -415,7 +415,7 @@ export class SessionClient {
     constructor(moduleClient: ModuleClient, options: TlsClientDefaultOptions = {}) {
         if (!moduleClient) {
             throw new Error(
-                'ModuleClient must be provided. Please create a new ModuleClient instance and pass it as the first argument.'
+                'ModuleClient must be provided. Please create a new ModuleClient instance and pass it as the first argument.',
             );
         }
 
@@ -533,8 +533,8 @@ export class SessionClient {
     private combineOptions(options: Partial<TlsClientOptions>): TlsClientOptions {
         // Merge default headers with request headers
         const headers = {
-            ...(this.defaultOptions.defaultHeaders ?? {}),
-            ...(options.headers ?? {}),
+            ...this.defaultOptions.defaultHeaders,
+            ...options.headers,
         };
 
         // Merge default cookies with request cookies
@@ -556,13 +556,35 @@ export class SessionClient {
     }
 
     private convertBody(body: unknown): string {
-        if (typeof body === 'object' || Array.isArray(body)) return JSON.stringify(body);
-        return String(body);
+        if (typeof body === 'object' || Array.isArray(body)) {
+            return JSON.stringify(body);
+        }
+        if (typeof body === 'string') {
+            return body;
+        }
+        if (typeof body === 'number' || typeof body === 'boolean' || typeof body === 'bigint') {
+            return String(body);
+        }
+        if (typeof body === 'symbol') {
+            return body.toString();
+        }
+        if (body === undefined) {
+            return 'undefined';
+        }
+        throw new Error('Unsupported request body type');
     }
 
     private convertUrl(url: unknown): string {
-        if (!url) throw new Error('Missing url parameter');
-        return String(url);
+        if (url instanceof URL) {
+            return url.toString();
+        }
+        if (typeof url === 'string') {
+            return url;
+        }
+        if (!url) {
+            throw new Error('Missing url parameter');
+        }
+        throw new Error('Invalid url type');
     }
 
     /**
@@ -579,11 +601,11 @@ export class SessionClient {
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
     public async destroySession(id: string = this.sessionId): Promise<unknown> {
-        return this.exec('destroySession', [id]);
+        return await this.exec('destroySession', [id]);
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
-        return this.exec('request', [JSON.stringify(options)]) as Promise<TlsClientResponse>;
+        return (await this.exec('request', [JSON.stringify(options)])) as TlsClientResponse;
     }
 
     private async retryRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
@@ -618,7 +640,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async get(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'GET',
@@ -638,9 +660,9 @@ export class SessionClient {
     public async post(
         url: URL | string,
         body: unknown,
-        options: Partial<TlsClientOptions> = {}
+        options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'POST',
@@ -660,9 +682,9 @@ export class SessionClient {
     public async put(
         url: URL | string,
         body: unknown,
-        options: Partial<TlsClientOptions> = {}
+        options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'PUT',
@@ -679,7 +701,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async delete(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'DELETE',
@@ -696,7 +718,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async head(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'HEAD',
@@ -716,9 +738,9 @@ export class SessionClient {
     public async patch(
         url: URL | string,
         body: unknown,
-        options: Partial<TlsClientOptions> = {}
+        options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'PATCH',
@@ -735,7 +757,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async options(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return this.request({
+        return await this.request({
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'OPTIONS',
@@ -755,8 +777,7 @@ export class SessionClient {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
         await this.init();
 
-        const response = this.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })]);
-        return response as Promise<CookieResponse>;
+        return (await this.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })])) as CookieResponse;
     }
 
     /**
@@ -771,8 +792,9 @@ export class SessionClient {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
         await this.init();
 
-        const response = this.exec('addCookiesToSession', [JSON.stringify({ sessionId, url, cookies })]);
-        return response as Promise<CookieResponse>;
+        return (await this.exec('addCookiesToSession', [
+            JSON.stringify({ sessionId, url, cookies }),
+        ])) as CookieResponse;
     }
 
     /**
@@ -791,12 +813,10 @@ export class SessionClient {
             throw new Error('Worker pool not initialized');
         }
 
-        const result = await this.pool.run({
+        return (await this.pool.run({
             fn: func,
             args,
-        });
-
-        return result;
+        })) as unknown;
     }
 }
 
