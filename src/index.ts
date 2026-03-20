@@ -2,6 +2,22 @@ import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
 import type { Piscina } from 'piscina';
 
+/** Best-effort Go session cleanup when a SessionClient is GC'd without destroySession() */
+const sessionFinalizationRegistry = new FinalizationRegistry(
+    (held: { sessionId: string; moduleClient: ModuleClient }) => {
+        if (!held.moduleClient.pool) return;
+        void held.moduleClient.pool.run({ fn: 'destroySession', args: [held.sessionId] }).catch(() => {
+            /* ignore: GC-time cleanup */
+        });
+    },
+);
+
+/**
+ * Accepted request body types. Objects are JSON-stringified, primitives are
+ * converted via String(). Pass `null` to send no body.
+ */
+export type RequestBody = string | object | number | boolean | null;
+
 // Type definitions
 export type ChromeProfile =
     | 'chrome_103'
@@ -431,28 +447,6 @@ export interface TlsClientResponse {
 }
 
 /**
- * Input for getting cookies from a session
- */
-export interface GetCookiesInput {
-    /** The existing session ID */
-    sessionId: string;
-    /** The URL to get cookies for */
-    url: string;
-}
-
-/**
- * Input for adding cookies to a session
- */
-export interface AddCookiesInput {
-    /** The existing session ID */
-    sessionId: string;
-    /** The URL to add cookies for */
-    url: string;
-    /** The cookies to add */
-    cookies: Cookie[] | null;
-}
-
-/**
  * Response containing cookies
  */
 export interface CookieResponse {
@@ -468,6 +462,7 @@ export class SessionClient {
     private readonly sessionId: string;
     private readonly moduleClient: ModuleClient;
     private pool: Piscina | null = null;
+    private destroyed = false;
 
     /**
      * @description Create a new SessionClient
@@ -567,6 +562,7 @@ export class SessionClient {
 
         this.sessionId = crypto.randomUUID();
         this.moduleClient = moduleClient;
+        sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
     }
 
     private async init(): Promise<void> {
@@ -574,6 +570,13 @@ export class SessionClient {
             await this.moduleClient.open();
             this.pool = this.moduleClient.pool;
         }
+    }
+
+    /**
+     * Explicit async cleanup for `await using session = new SessionClient(...)` (TypeScript 5.2+).
+     */
+    async [Symbol.asyncDispose](): Promise<void> {
+        await this.destroySession();
     }
 
     /**
@@ -619,36 +622,15 @@ export class SessionClient {
         };
     }
 
-    private convertBody(body: unknown): string {
-        if (typeof body === 'object' || Array.isArray(body)) {
-            return JSON.stringify(body);
-        }
-        if (typeof body === 'string') {
-            return body;
-        }
-        if (typeof body === 'number' || typeof body === 'boolean' || typeof body === 'bigint') {
-            return String(body);
-        }
-        if (typeof body === 'symbol') {
-            return body.toString();
-        }
-        if (body === undefined) {
-            return 'undefined';
-        }
-        throw new Error('Unsupported request body type');
+    private convertBody(body: RequestBody): string | null {
+        if (body === null || body === undefined) return null;
+        if (typeof body === 'string') return body;
+        if (typeof body === 'object') return JSON.stringify(body);
+        return String(body);
     }
 
-    private convertUrl(url: unknown): string {
-        if (url instanceof URL) {
-            return url.toString();
-        }
-        if (typeof url === 'string') {
-            return url;
-        }
-        if (!url) {
-            throw new Error('Missing url parameter');
-        }
-        throw new Error('Invalid url type');
+    private convertUrl(url: URL | string): string {
+        return url instanceof URL ? url.toString() : url;
     }
 
     /**
@@ -665,7 +647,19 @@ export class SessionClient {
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
     public async destroySession(id: string = this.sessionId): Promise<unknown> {
-        return await this.exec('destroySession', [id]);
+        if (this.destroyed) {
+            return undefined;
+        }
+        sessionFinalizationRegistry.unregister(this);
+        try {
+            await this.init();
+            const result = await this.exec('destroySession', [id]);
+            this.destroyed = true;
+            return result;
+        } catch (error) {
+            sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
+            throw error;
+        }
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
@@ -731,7 +725,7 @@ export class SessionClient {
      */
     public async post(
         url: URL | string,
-        body: unknown,
+        body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
         return await this.request({
@@ -753,7 +747,7 @@ export class SessionClient {
      */
     public async put(
         url: URL | string,
-        body: unknown,
+        body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
         return await this.request({
@@ -809,7 +803,7 @@ export class SessionClient {
      */
     public async patch(
         url: URL | string,
-        body: unknown,
+        body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
         return await this.request({
@@ -877,8 +871,10 @@ export class SessionClient {
         return this.exec('destroyAll', []);
     }
 
-    // Method to exec and then run freeMemory
     private async exec(func: string, args: unknown[]): Promise<unknown> {
+        if (this.destroyed && func !== 'destroySession') {
+            throw new Error('SessionClient has been destroyed');
+        }
         await this.init();
 
         if (!this.pool) {
