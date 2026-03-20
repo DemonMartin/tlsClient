@@ -7,7 +7,7 @@ Now with TypeScript Support.
 
 - ⚡ Multi-threaded request handling via Piscina worker pools
 - 🔄 Automatic session management and cookie handling
-- 🛡️ Latest TLS fingerprint support (Chrome 131, Firefox 133, etc.)
+- 🛡️ Latest TLS fingerprint support (Chrome 146, Firefox 147, Safari iOS 26, etc.)
 - 🔄 Built-in retry mechanism for failed requests
 - 📚 Full TypeScript support and proper JSDocs for ESM and CJS support
 - 🔌 Automatic TLS library download and management
@@ -66,7 +66,7 @@ const moduleClient = new ModuleClient({
 
 // Create multiple sessions for different purposes
 const loginSession = new SessionClient(moduleClient, {
-    defaultHeaders: { 'User-Agent': 'Chrome/131.0.0.0' },
+    defaultHeaders: { 'User-Agent': 'Chrome/146.0.0.0' },
 });
 
 const apiSession = new SessionClient(moduleClient, {
@@ -90,7 +90,7 @@ await moduleClient.terminate();
 ```javascript
 const session = new SessionClient(moduleClient, {
     // TLS Configuration
-    tlsClientIdentifier: 'chrome_131',
+    tlsClientIdentifier: 'chrome_146',
 
     // Retry Configuration
     retryIsEnabled: true,
@@ -162,7 +162,7 @@ For detailed API documentation and type information, explore the source code or 
 
 This wrapper requires:
 
-- Node.js 16.x or later
+- Node.js 18.x or later
 - Platform supported by Koffi (Windows, macOS, Linux)
 - x64, arm64, or compatible architecture
 

@@ -19,10 +19,15 @@ export type ChromeProfile =
     | 'chrome_117'
     | 'chrome_120'
     | 'chrome_124'
+    | 'chrome_130_PSK'
     | 'chrome_131'
     | 'chrome_131_PSK'
     | 'chrome_133'
-    | 'chrome_133_PSK';
+    | 'chrome_133_PSK'
+    | 'chrome_144'
+    | 'chrome_144_PSK'
+    | 'chrome_146'
+    | 'chrome_146_PSK';
 
 export type SafariProfile = 'safari_15_6_1' | 'safari_16_0';
 
@@ -32,9 +37,10 @@ export type SafariIOSProfile =
     | 'safari_ios_16_0'
     | 'safari_ios_17_0'
     | 'safari_ios_18_0'
-    | 'safari_ios_18_5';
+    | 'safari_ios_18_5'
+    | 'safari_ios_26_0';
 
-export type SafariIpadOSProfile = 'safari_ios_15_6';
+export type SafariIpadOSProfile = 'safari_ipad_15_6';
 
 export type FirefoxProfile =
     | 'firefox_102'
@@ -48,13 +54,27 @@ export type FirefoxProfile =
     | 'firefox_123'
     | 'firefox_132'
     | 'firefox_133'
-    | 'firefox_135';
+    | 'firefox_135'
+    | 'firefox_146_PSK'
+    | 'firefox_147'
+    | 'firefox_147_PSK';
 
 export type OperaProfile = 'opera_89' | 'opera_90' | 'opera_91';
 
+export type OkHttp4Profile =
+    | 'okhttp4_android_7'
+    | 'okhttp4_android_8'
+    | 'okhttp4_android_9'
+    | 'okhttp4_android_10'
+    | 'okhttp4_android_11'
+    | 'okhttp4_android_12'
+    | 'okhttp4_android_13';
+
 export type CustomClientProfile =
     | 'zalando_ios_mobile'
+    | 'zalando_android_mobile'
     | 'nike_ios_mobile'
+    | 'nike_android_mobile'
     | 'cloudscraper'
     | 'mms_ios'
     | 'mms_ios_1'
@@ -62,7 +82,12 @@ export type CustomClientProfile =
     | 'mms_ios_3'
     | 'mesh_ios'
     | 'mesh_ios_1'
-    | 'confirmed_ios';
+    | 'mesh_ios_2'
+    | 'mesh_android'
+    | 'mesh_android_1'
+    | 'mesh_android_2'
+    | 'confirmed_ios'
+    | 'confirmed_android';
 
 export type ClientProfile =
     | ChromeProfile
@@ -71,6 +96,7 @@ export type ClientProfile =
     | SafariIpadOSProfile
     | FirefoxProfile
     | OperaProfile
+    | OkHttp4Profile
     | CustomClientProfile;
 
 /**
@@ -91,6 +117,15 @@ export type H2SettingsKey =
     | 'UNKNOWN_SETTING_7'
     | 'UNKNOWN_SETTING_8'
     | 'UNKNOWN_SETTING_9';
+
+/**
+ * HTTP/3 settings keys
+ */
+export type H3SettingsKey =
+    | 'QPACK_MAX_TABLE_CAPACITY'
+    | 'MAX_FIELD_SECTION_SIZE'
+    | 'QPACK_BLOCKED_STREAMS'
+    | 'H3_DATAGRAM';
 
 /**
  * Supported TLS versions
@@ -128,6 +163,7 @@ export type KeyShareCurve =
     | 'P256Kyber768'
     | 'X25519Kyber512D'
     | 'X25519Kyber768'
+    | 'X25519Kyber768Old'
     | 'X25519MLKEM768';
 
 /**
@@ -168,7 +204,7 @@ export interface PriorityFrames {
 /**
  * ECH Candidate Cipher Suite configuration
  */
-export interface CanidateCipherSuite {
+export interface CandidateCipherSuite {
     kdfId: KdfId;
     aeadId: AeadId;
 }
@@ -177,14 +213,24 @@ export interface CanidateCipherSuite {
  * Custom TLS client configuration for advanced fingerprint customization
  */
 export interface CustomTLSClient {
-    /** Certificate compression algorithm */
-    certCompressionAlgo?: CertCompressionAlgorithm;
+    /** Certificate compression algorithms */
+    certCompressionAlgos?: CertCompressionAlgorithm[];
     /** Connection flow identifier */
     connectionFlow?: number;
     /** HTTP/2 settings map */
     h2Settings?: Record<H2SettingsKey, number>;
     /** Array of H2Settings keys in order */
     h2SettingsOrder?: H2SettingsKey[];
+    /** HTTP/3 settings map */
+    h3Settings?: Record<H3SettingsKey, number>;
+    /** Array of H3Settings keys in order */
+    h3SettingsOrder?: H3SettingsKey[];
+    /** Pseudo header order for HTTP/3 requests */
+    h3PseudoHeaderOrder?: string[];
+    /** HTTP/3 priority parameter */
+    h3PriorityParam?: number;
+    /** Whether to send GREASE frames in HTTP/3 */
+    h3SendGreaseFrames?: boolean;
     /** Priority parameters for headers */
     headerPriority?: PriorityParam;
     /** JA3 fingerprint string */
@@ -200,7 +246,7 @@ export interface CustomTLSClient {
     /** List of ECH Candidate Payloads */
     ECHCandidatePayloads?: number[];
     /** ECH Candidate Cipher Suites */
-    ECHCandidateCipherSuites?: CanidateCipherSuite[];
+    ECHCandidateCipherSuites?: CandidateCipherSuite[];
     /** Order of pseudo headers */
     pseudoHeaderOrder?: string[];
     /** Supported algorithms for delegated credentials */
@@ -209,6 +255,12 @@ export interface CustomTLSClient {
     supportedSignatureAlgorithms?: SignatureAlgorithm[];
     /** Supported TLS versions */
     supportedVersions?: SupportedVersion[];
+    /** TLS record size limit extension value */
+    recordSizeLimit?: number;
+    /** Initial HTTP/2 stream ID */
+    streamId?: number;
+    /** Allow plaintext HTTP connections */
+    allowHttp?: boolean;
 }
 
 /**
@@ -251,13 +303,17 @@ export interface Cookie {
     path: string;
     /** The value of the cookie */
     value: string;
+    /** Whether the cookie should only be sent over HTTPS */
+    secure?: boolean;
+    /** Whether the cookie is inaccessible to client-side scripts */
+    httpOnly?: boolean;
 }
 
 /**
  * Default options for TLS client configuration
  */
 export interface TlsClientDefaultOptions {
-    /** Identifier of the TLS client (default: 'chrome_133') */
+    /** Identifier of the TLS client (default: 'chrome_146') */
     tlsClientIdentifier?: ClientProfile;
     /** If true, wrapper will retry the request based on retryStatusCodes (default: true) */
     retryIsEnabled?: boolean;
@@ -279,12 +335,14 @@ export interface TlsClientDefaultOptions {
     forceHttp1?: boolean;
     /** If true, HTTP/3 will be disabled (default: false) */
     disableHttp3?: boolean;
+    /** If true, races HTTP/3 (QUIC) and HTTP/2 (TCP) connections in parallel (default: false) */
+    withProtocolRacing?: boolean;
     /** Order of headers */
     headerOrder?: string[];
     /** Default headers which will be used in every request */
     defaultHeaders?: Record<string, string> | null;
     /** Headers to be used during the CONNECT request */
-    connectHeaders?: Record<string, string> | null;
+    connectHeaders?: Record<string, string[]> | null;
     /** If true, insecure verification will be skipped (default: false) */
     insecureSkipVerify?: boolean;
     /** If true, the request is a byte request (default: false) */
@@ -319,12 +377,14 @@ export interface TlsClientDefaultOptions {
     timeoutSeconds?: number;
     /** If true, debug mode is enabled (default: false) */
     withDebug?: boolean;
-    /** If true, the default cookie jar is used (default: true) */
-    withDefaultCookieJar?: boolean;
+    /** If true, the old tls-client custom cookie jar is used instead of Go's default jar (default: false) */
+    withCustomCookieJar?: boolean;
     /** If true, the cookie jar is not used (default: false) */
     withoutCookieJar?: boolean;
     /** If true, the order of TLS extensions is randomized (default: true) */
     withRandomTLSExtensionOrder?: boolean;
+    /** If true, the response body will be decoded using EUC-KR encoding (default: false) */
+    euckrResponse?: boolean;
     /** Custom path to download the TLS library */
     customLibraryDownloadPath?: string | null;
 }
@@ -364,6 +424,8 @@ export interface TlsClientResponse {
     headers: Record<string, string>;
     /** The cookies of the response */
     cookies: Record<string, Cookie>;
+    /** The protocol used for the request (e.g. "h2", "HTTP/2.0", "HTTP/1.1") */
+    usedProtocol?: string;
     /** The number of retries */
     retryCount: number;
 }
@@ -424,7 +486,7 @@ export class SessionClient {
         }
 
         this.defaultOptions = {
-            tlsClientIdentifier: 'chrome_133',
+            tlsClientIdentifier: 'chrome_146',
             catchPanics: false,
             certificatePinningHosts: null,
             customTlsClient: null,
@@ -433,6 +495,7 @@ export class SessionClient {
             followRedirects: false,
             forceHttp1: false,
             disableHttp3: false,
+            withProtocolRacing: false,
             headerOrder: [
                 'host',
                 'user-agent',
@@ -472,7 +535,7 @@ export class SessionClient {
             ],
             defaultHeaders: {
                 'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
             },
             connectHeaders: null,
             insecureSkipVerify: false,
@@ -492,9 +555,10 @@ export class SessionClient {
             timeoutMilliseconds: 0,
             timeoutSeconds: 60,
             withDebug: false,
-            withDefaultCookieJar: true,
+            withCustomCookieJar: false,
             withoutCookieJar: false,
             withRandomTLSExtensionOrder: true,
+            euckrResponse: false,
             retryIsEnabled: true,
             retryMaxCount: 3,
             retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
@@ -605,7 +669,15 @@ export class SessionClient {
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
-        return (await this.exec('request', [JSON.stringify(options)])) as TlsClientResponse;
+        const {
+            retryIsEnabled: _retryIsEnabled,
+            retryMaxCount: _retryMaxCount,
+            retryStatusCodes: _retryStatusCodes,
+            customLibraryDownloadPath: _customLibraryDownloadPath,
+            ...goOptions
+        } = options;
+
+        return (await this.exec('request', [JSON.stringify(goOptions)])) as TlsClientResponse;
     }
 
     private async retryRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
@@ -705,7 +777,7 @@ export class SessionClient {
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'DELETE',
-            requestBody: '',
+            requestBody: null,
             requestCookies: [],
             ...options,
         });
@@ -722,7 +794,7 @@ export class SessionClient {
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'HEAD',
-            requestBody: '',
+            requestBody: null,
             requestCookies: [],
             ...options,
         });
@@ -761,7 +833,7 @@ export class SessionClient {
             sessionId: this.sessionId,
             requestUrl: this.convertUrl(url),
             requestMethod: 'OPTIONS',
-            requestBody: '',
+            requestBody: null,
             requestCookies: [],
             ...options,
         });
