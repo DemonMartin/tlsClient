@@ -1,14 +1,8 @@
-import Piscina from 'piscina';
+import koffi from 'koffi';
 import TlsDependency from './path.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import { isMainThread } from 'worker_threads';
-function getWorkerPath(): string {
-    const ext = typeof __dirname !== 'undefined' && __filename.endsWith('.cjs') ? 'cjs' : 'mjs';
-    return path.resolve(__dirname, 'utils', `worker.${ext}`);
-}
 
 /**
  * Configuration options for the ModuleClient
@@ -18,35 +12,26 @@ export interface ModuleClientOptions {
     customLibraryPath?: string;
     /** Path to download the TLS library */
     customLibraryDownloadPath?: string;
-    /** Maximum number of threads in the worker pool */
-    maxThreads?: number;
 }
 
-/**
- * Statistics about the worker pool
- */
-export interface PoolStats {
-    /** The number of active threads in the pool */
-    utilization: number;
-    /** The number of completed tasks */
-    completed: number;
-    /** The number of tasks waiting to be processed */
-    waiting: number;
-    /** The number of threads in the pool */
-    threads: number;
-}
+type KoffiAsyncFn = ((...args: unknown[]) => unknown) & {
+    async: (...argsWithCallback: unknown[]) => void;
+};
 
 /**
- * @classdesc Manages the TLS library and worker pool.
+ * @classdesc Manages the TLS library and FFI bindings.
+ *
+ * Uses koffi's built-in async FFI calls instead of worker threads.
+ * Each async call runs on a lightweight koffi thread — no V8 isolate overhead.
  */
 class ModuleClient {
     private readonly customPath: boolean;
     private readonly tlsDependency: TlsDependency;
     private readonly tlsDependencyPath: ReturnType<TlsDependency['getTLSDependencyPath']> | undefined;
     private readonly TLS_LIB_PATH: string;
-    private readonly maxThreads: number;
 
-    public pool: Piscina | null = null;
+    private lib: ReturnType<typeof koffi.load> | null = null;
+    private fns: Record<string, KoffiAsyncFn> | null = null;
 
     /**
      * @description Creates a new ModuleClient instance.
@@ -63,7 +48,13 @@ class ModuleClient {
             throw new Error('TLS library path not available');
         }
         this.TLS_LIB_PATH = libPath;
-        this.maxThreads = options?.maxThreads ?? Math.max(os.cpus()?.length ?? 12, 1) * 2;
+    }
+
+    /**
+     * Whether the module is loaded and ready for calls.
+     */
+    get isOpen(): boolean {
+        return this.lib !== null && this.fns !== null;
     }
 
     /**
@@ -104,62 +95,87 @@ class ModuleClient {
     }
 
     /**
-     * @description Opens the TLS library and initializes the worker pool.
-     * @returns {Promise<void>} Promise that resolves when the library is opened and pool is initialized
+     * @description Loads the TLS library and creates FFI bindings.
+     * @returns {Promise<void>} Promise that resolves when the library is ready
      */
     async open(): Promise<void> {
-        if (this.pool) return; // Prevent repeated initializations
+        if (this.lib) return;
 
-        if (isMainThread) {
-            await this.downloadLibrary();
-        }
+        await this.downloadLibrary();
 
-        this.pool = this.startWorkerPool();
-    }
-
-    /**
-     * @description Starts the worker pool.
-     * @returns {Piscina} The Piscina worker pool.
-     */
-    private startWorkerPool(): Piscina {
-        return new Piscina({
-            filename: getWorkerPath(),
-            workerData: { libraryPath: this.TLS_LIB_PATH },
-            maxQueue: Infinity,
-            atomics: 'disabled',
-            idleTimeout: 30000,
-            minThreads: 1,
-            maxThreads: this.maxThreads,
-        });
-    }
-
-    /**
-     * @description Get current pool statistics.
-     * @returns {PoolStats | null} Pool statistics.
-     */
-    getPoolStats(): PoolStats | null {
-        if (!this.pool) return null;
-
-        return {
-            utilization: this.pool.utilization,
-            completed: this.pool.completed,
-            waiting: this.pool.queueSize,
-            threads: this.pool.threads.length,
+        this.lib = koffi.load(this.TLS_LIB_PATH);
+        this.fns = {
+            request: this.lib.func('request', 'string', ['string']) as KoffiAsyncFn,
+            getCookiesFromSession: this.lib.func('getCookiesFromSession', 'string', ['string']) as KoffiAsyncFn,
+            addCookiesToSession: this.lib.func('addCookiesToSession', 'string', ['string']) as KoffiAsyncFn,
+            freeMemory: this.lib.func('freeMemory', 'void', ['string']) as KoffiAsyncFn,
+            destroyAll: this.lib.func('destroyAll', 'string', []) as KoffiAsyncFn,
+            destroySession: this.lib.func('destroySession', 'string', ['string']) as KoffiAsyncFn,
         };
     }
 
     /**
-     * @description Terminates the worker pool and unloads the TLS library.
+     * Dispatch an FFI call asynchronously via koffi's built-in thread pool.
+     *
+     * Response strings that look like JSON are parsed automatically and
+     * `freeMemory` is called on the Go-allocated response id.
+     */
+    async call(fn: string, args: unknown[]): Promise<unknown> {
+        if (!this.fns) {
+            throw new Error('Module not initialized. Call open() first.');
+        }
+
+        const func = this.fns[fn];
+        if (typeof func !== 'function') {
+            throw new Error(`Unknown function: ${fn}`);
+        }
+
+        const fns = this.fns;
+
+        return await new Promise((resolve, reject) => {
+            const callback = (err: Error | null, result: unknown): void => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                if (typeof result === 'string' && result.trim().startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(result) as { id?: string };
+
+                        if (parsed.id) {
+                            const freeMemory = fns['freeMemory'];
+                            if (typeof freeMemory === 'function') {
+                                (freeMemory as (id: string) => void)(parsed.id);
+                            }
+                            delete parsed.id;
+                        }
+
+                        resolve(parsed);
+                    } catch {
+                        resolve(result);
+                    }
+                } else {
+                    resolve(result);
+                }
+            };
+
+            func.async(...args, callback);
+        });
+    }
+
+    /**
+     * @description Destroys all Go-side sessions and releases FFI bindings.
+     * The native library is NOT unloaded (Go runtime cannot safely be dlclose'd).
      * @returns {Promise<boolean>} True if the termination was successful, false otherwise.
      */
     async terminate(): Promise<boolean> {
         try {
-            if (this.pool) {
-                await this.pool.run({ fn: 'destroyAll', args: [] });
-                await this.pool.destroy();
-                this.pool = null;
+            if (this.fns) {
+                await this.call('destroyAll', []);
+                this.fns = null;
             }
-
+            this.lib = null;
             return true;
         } catch (error) {
             console.error('Error during ModuleClient termination:', error);

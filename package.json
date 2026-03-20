@@ -72,8 +72,7 @@
         "test:simple_request:cjs": "node tests/test.simple_request.cjs"
     },
     "dependencies": {
-        "koffi": "^2.15.2",
-        "piscina": "^5.1.4"
+        "koffi": "^2.15.2"
     },
     "devDependencies": {
         "@types/node": "^22.19.15",

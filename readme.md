@@ -1,11 +1,11 @@
 # TlsClientWrapper
 
-A high-performance Node.js wrapper for `bogdanfinn/tls-client` using Koffi bindings and worker thread pools.
+A high-performance Node.js wrapper for `bogdanfinn/tls-client` using Koffi's async FFI bindings.
 Now with TypeScript Support.
 
 ## Features
 
-- ⚡ Multi-threaded request handling via Piscina worker pools
+- ⚡ Non-blocking async FFI calls via koffi
 - 🔄 Automatic session management and cookie handling
 - 🛡️ Latest TLS fingerprint support (Chrome 146, Firefox 147, Safari iOS 26, etc.)
 - 🔄 Built-in retry mechanism for failed requests
@@ -26,15 +26,21 @@ pnpm add tlsclientwrapper
 
 TlsClientWrapper uses a two-tier architecture:
 
-1. **ModuleClient**: Manages the worker pool and TLS library | Important: Piscana seems to share the pools by default, meaning creating multiple ones wont change anything.
+1. **ModuleClient**: Loads the native TLS library and exposes async FFI bindings via koffi
 2. **SessionClient**: Handles individual TLS sessions and requests
 
 ```plaintext
-ModuleClient (Worker Pool)
+ModuleClient (koffi FFI bindings)
 ├─ SessionClient 1
 ├─ SessionClient 2
 └─ SessionClient N
 ```
+
+### Memory and scaling
+
+- Use **one** `ModuleClient` per process and share it across many `SessionClient` instances. Each `ModuleClient` loads the native library once; creating multiple module clients is wasteful.
+- Each `SessionClient` maps to a Go-side session (cookies, TLS state). Call `await session.destroySession()` when done, or use **`await using`** / `Symbol.asyncDispose` so the session is torn down when the handle goes out of scope. Dropped sessions without cleanup keep Go memory until process exit.
+- If response latency degrades after many thousands of requests on the same session, destroy and recreate the session to reset the Go-side connection pool state.
 
 ### Basic Usage
 
@@ -43,7 +49,7 @@ Now TypeScript, ESM and CJS are supported.
 ```typescript
 import { ModuleClient, SessionClient } from 'tlsclientwrapper';
 
-// 1. Create the worker pool manager
+// 1. Load the native TLS library
 const moduleClient = new ModuleClient();
 
 // 2. Create a session for making requests
@@ -60,9 +66,7 @@ await moduleClient.terminate();
 ### Managing Multiple Sessions
 
 ```javascript
-const moduleClient = new ModuleClient({
-    maxThreads: 8, // Optimize thread count (more Threads = more concurrent Requests, test whats the best for you)
-});
+const moduleClient = new ModuleClient();
 
 // Create multiple sessions for different purposes
 const loginSession = new SessionClient(moduleClient, {
@@ -134,24 +138,6 @@ for (let i = 0; i < urls.length; i += batchSize) {
 
 await session.destroySession();
 await moduleClient.terminate();
-```
-
-### Monitoring & Debugging
-
-```javascript
-const moduleClient = new ModuleClient();
-
-// Monitor worker pool performance
-setInterval(() => {
-    const stats = moduleClient.getPoolStats();
-    console.log(stats);
-}, 5000);
-
-const session = new SessionClient(moduleClient, {
-    withDebug: true, // Enable debug logging
-});
-
-// ... your requests ...
 ```
 
 ## API Reference

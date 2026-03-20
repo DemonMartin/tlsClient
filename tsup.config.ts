@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig([
     {
-        entryPoints: ['src/index.ts', 'src/utils/worker.ts'],
+        entryPoints: ['src/index.ts'],
         format: ['cjs', 'esm'],
         dts: {
             resolve: true,
@@ -30,10 +30,7 @@ export default defineConfig([
         // Mark native modules and Node.js built-ins as external
         external: [
             'koffi',
-            'piscina',
-            'worker_threads',
             'node:*',
-            // Explicitly exclude all native modules
             /\.node$/,
         ],
     },

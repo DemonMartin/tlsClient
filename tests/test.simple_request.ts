@@ -31,7 +31,6 @@ async function runLoadTest(): Promise<void> {
             completed++;
             if (completed % 1000 === 0) {
                 const m = process.memoryUsage();
-                const s = moduleClient.getPoolStats?.();
                 console.log(
                     JSON.stringify({
                         completed,
@@ -41,9 +40,6 @@ async function runLoadTest(): Promise<void> {
                         rssMB: Math.round(m.rss / 1e6),
                         heapUsedMB: Math.round(m.heapUsed / 1e6),
                         externalMB: Math.round(m.external / 1e6),
-                        waiting: s?.waiting,
-                        threads: s?.threads,
-                        util: s?.utilization,
                     }),
                 );
             }

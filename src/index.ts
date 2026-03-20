@@ -1,6 +1,15 @@
 import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
-import type { Piscina } from 'piscina';
+
+/** Best-effort Go session cleanup when a SessionClient is GC'd without destroySession() */
+const sessionFinalizationRegistry = new FinalizationRegistry(
+    (held: { sessionId: string; moduleClient: ModuleClient }) => {
+        if (!held.moduleClient.isOpen) return;
+        void held.moduleClient.call('destroySession', [held.sessionId]).catch(() => {
+            /* ignore: GC-time cleanup */
+        });
+    },
+);
 
 // Type definitions
 export type ChromeProfile =
@@ -467,7 +476,7 @@ export class SessionClient {
     public defaultOptions: TlsClientDefaultOptions;
     private readonly sessionId: string;
     private readonly moduleClient: ModuleClient;
-    private pool: Piscina | null = null;
+    private destroyed = false;
 
     /**
      * @description Create a new SessionClient
@@ -567,13 +576,20 @@ export class SessionClient {
 
         this.sessionId = crypto.randomUUID();
         this.moduleClient = moduleClient;
+        sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
     }
 
     private async init(): Promise<void> {
-        if (!this.pool) {
+        if (!this.moduleClient.isOpen) {
             await this.moduleClient.open();
-            this.pool = this.moduleClient.pool;
         }
+    }
+
+    /**
+     * Explicit async cleanup for `await using session = new SessionClient(...)` (TypeScript 5.2+).
+     */
+    async [Symbol.asyncDispose](): Promise<void> {
+        await this.destroySession();
     }
 
     /**
@@ -665,7 +681,19 @@ export class SessionClient {
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
     public async destroySession(id: string = this.sessionId): Promise<unknown> {
-        return await this.exec('destroySession', [id]);
+        if (this.destroyed) {
+            return undefined;
+        }
+        sessionFinalizationRegistry.unregister(this);
+        try {
+            await this.init();
+            const result = await this.moduleClient.call('destroySession', [id]);
+            this.destroyed = true;
+            return result;
+        } catch (error) {
+            sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
+            throw error;
+        }
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
@@ -877,21 +905,15 @@ export class SessionClient {
         return this.exec('destroyAll', []);
     }
 
-    // Method to exec and then run freeMemory
     private async exec(func: string, args: unknown[]): Promise<unknown> {
-        await this.init();
-
-        if (!this.pool) {
-            throw new Error('Worker pool not initialized');
+        if (this.destroyed && func !== 'destroySession') {
+            throw new Error('SessionClient has been destroyed');
         }
-
-        return (await this.pool.run({
-            fn: func,
-            args,
-        })) as unknown;
+        await this.init();
+        return await this.moduleClient.call(func, args);
     }
 }
 
 export default { SessionClient, ModuleClient };
 export { ModuleClient };
-export { type ModuleClientOptions, type PoolStats } from './utils/client.js';
+export { type ModuleClientOptions } from './utils/client.js';
