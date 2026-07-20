@@ -332,7 +332,7 @@ export interface TlsClientDefaultOptions {
     tlsClientIdentifier?: ClientProfile;
     /** If true, wrapper will retry the request based on retryStatusCodes (default: true) */
     retryIsEnabled?: boolean;
-    /** Maximum number of retries (default: 3) */
+    /** Maximum number of total attempts per request, including the first one (default: 3) */
     retryMaxCount?: number;
     /** Status codes for retries (default: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524]) */
     retryStatusCodes?: number[];
@@ -637,8 +637,8 @@ export class SessionClient {
     }
 
     /**
-     * @description Gets the session ID if session rotation is not enabled.
-     * @returns {string} The session ID, or null if session rotation is enabled.
+     * @description Gets the session ID.
+     * @returns {string} The session ID.
      */
     public getSession(): string {
         return this.sessionId;

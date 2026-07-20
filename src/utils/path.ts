@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { URL } from 'node:url';
 
 interface TLSDependencyPath {
     DOWNLOAD_PATH: string;
@@ -54,25 +53,21 @@ class TlsDependency {
 
             this.distribution = distribution ?? 'linux-amd64';
         } else {
-            console.error(`Unsupported platform: ${this.platform}`);
-            process.exit(1);
+            throw new Error(`Unsupported platform: ${this.platform}`);
         }
     }
 
     getTLSDependencyPath(customPath?: string | null): TLSDependencyPath {
         const filename = `${this.filename}-${this.version}-${this.distribution}.${this.extension}`;
-        const url = new URL(`https://github.com/bogdanfinn/tls-client/releases/download/v${this.version}/${filename}`);
-        const downloadFolder = customPath ?? os.tmpdir() ?? process.cwd();
+        const downloadFolder = customPath ?? os.tmpdir();
 
         if (!fs.existsSync(downloadFolder)) {
             throw new Error(`The download folder does not exist: ${downloadFolder}`);
         }
 
-        const destination = path.join(downloadFolder, filename);
-
         return {
-            DOWNLOAD_PATH: url.href,
-            TLS_LIB_PATH: destination,
+            DOWNLOAD_PATH: `https://github.com/bogdanfinn/tls-client/releases/download/v${this.version}/${filename}`,
+            TLS_LIB_PATH: path.join(downloadFolder, filename),
         };
     }
 }

@@ -31,7 +31,6 @@ export default defineConfig([
         external: [
             'koffi',
             'piscina',
-            'worker_threads',
             'node:*',
             // Explicitly exclude all native modules
             /\.node$/,
