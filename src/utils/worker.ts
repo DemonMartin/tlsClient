@@ -1,60 +1,44 @@
-import koffi from 'koffi';
-import { workerData } from 'worker_threads';
+import koffi, { type KoffiFunc } from 'koffi';
+import { workerData } from 'node:worker_threads';
 
 interface WorkerTask {
     fn: string;
-    args?: unknown[];
+    args?: string[];
 }
 
-// Create a single instance per worker
-let lib: koffi.IKoffiLib | null = null;
-let instance: Record<string, unknown> | null = null;
+type TlsClientFunction = KoffiFunc<(...args: string[]) => string>;
 
-function createInstance(): Record<string, unknown> {
-    const data = workerData as { libraryPath: string };
+// One library instance per worker thread
+const lib = koffi.load((workerData as { libraryPath: string }).libraryPath);
 
-    lib ??= koffi.load(data.libraryPath);
+const freeMemory: TlsClientFunction = lib.func('freeMemory', 'void', ['string']);
 
-    return {
-        request: lib.func('request', 'string', ['string']),
-        getCookiesFromSession: lib.func('getCookiesFromSession', 'string', ['string']),
-        addCookiesToSession: lib.func('addCookiesToSession', 'string', ['string']),
-        freeMemory: lib.func('freeMemory', 'void', ['string']),
-        destroyAll: lib.func('destroyAll', 'string', []),
-        destroySession: lib.func('destroySession', 'string', ['string']),
-    };
-}
+// freeMemory is intentionally not dispatchable by name; the handler frees responses itself
+const functions: Record<string, TlsClientFunction> = {
+    request: lib.func('request', 'string', ['string']),
+    getCookiesFromSession: lib.func('getCookiesFromSession', 'string', ['string']),
+    addCookiesToSession: lib.func('addCookiesToSession', 'string', ['string']),
+    destroyAll: lib.func('destroyAll', 'string', []),
+    destroySession: lib.func('destroySession', 'string', ['string']),
+};
 
-// Initialize instance on worker startup
-instance = createInstance();
-
-export default async function handler(task: WorkerTask): Promise<unknown> {
-    if (!instance) {
-        throw new Error('Worker instance not initialized');
-    }
-
+export default function handler(task: WorkerTask): unknown {
     const { fn, args = [] } = task;
+    const func = functions[fn];
 
-    // Type guard to ensure the function exists
-    if (!(fn in instance)) {
+    if (!func) {
         throw new Error(`Unknown function: ${fn}`);
     }
 
-    const func = instance[fn];
-
-    if (typeof func !== 'function') {
-        throw new Error(`${fn} is not a function`);
-    }
-
-    const result = await (func as (...args: unknown[]) => unknown)(...args);
+    const result = func(...args);
 
     // Parse result if it's a string (most functions return JSON strings)
     if (typeof result === 'string' && result.trim().startsWith('{')) {
         const parsedResult = JSON.parse(result) as { id?: string };
 
-        // Free memory immediately if needed
-        if (parsedResult.id && 'freeMemory' in instance && typeof instance.freeMemory === 'function') {
-            (instance.freeMemory as (id: string) => void)(parsedResult.id);
+        // The Go side allocates each response; free it via its id
+        if (parsedResult.id) {
+            freeMemory(parsedResult.id);
             delete parsedResult.id;
         }
 

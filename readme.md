@@ -7,7 +7,7 @@ Now with TypeScript Support.
 
 - ⚡ Multi-threaded request handling via Piscina worker pools
 - 🔄 Automatic session management and cookie handling
-- 🛡️ Latest TLS fingerprint support (Chrome 146, Firefox 147, Safari iOS 26, etc.)
+- 🛡️ Latest TLS fingerprint support (Chrome 146, Brave 146, Firefox 148, Safari iOS 26, etc.)
 - 🔄 Built-in retry mechanism for failed requests
 - 📚 Full TypeScript support and proper JSDocs for ESM and CJS support
 - 🔌 Automatic TLS library download and management
@@ -19,6 +19,8 @@ npm install tlsclientwrapper
 # or
 pnpm add tlsclientwrapper
 ```
+
+> pnpm blocks dependency build scripts by default. If koffi's native binding is missing after install, run `pnpm approve-builds` and allow `koffi`.
 
 ## Core Concepts
 
@@ -162,7 +164,7 @@ For detailed API documentation and type information, explore the source code or 
 
 This wrapper requires:
 
-- Node.js 18.x or later
+- Node.js 20.x or later
 - Platform supported by Koffi (Windows, macOS, Linux)
 - x64, arm64, or compatible architecture
 

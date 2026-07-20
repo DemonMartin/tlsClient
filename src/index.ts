@@ -1,14 +1,15 @@
 import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
-import type { Piscina } from 'piscina';
 
 /** Best-effort Go session cleanup when a SessionClient is GC'd without destroySession() */
 const sessionFinalizationRegistry = new FinalizationRegistry(
     (held: { sessionId: string; moduleClient: ModuleClient }) => {
         if (!held.moduleClient.pool) return;
-        void held.moduleClient.pool.run({ fn: 'destroySession', args: [held.sessionId] }).catch(() => {
-            /* ignore: GC-time cleanup */
-        });
+        void held.moduleClient.pool
+            .run({ fn: 'destroySession', args: [JSON.stringify({ sessionId: held.sessionId })] })
+            .catch(() => {
+                /* ignore: GC-time cleanup */
+            });
     },
 );
 
@@ -45,6 +46,8 @@ export type ChromeProfile =
     | 'chrome_146'
     | 'chrome_146_PSK';
 
+export type BraveProfile = 'brave_146' | 'brave_146_PSK';
+
 export type SafariProfile = 'safari_15_6_1' | 'safari_16_0';
 
 export type SafariIOSProfile =
@@ -73,7 +76,8 @@ export type FirefoxProfile =
     | 'firefox_135'
     | 'firefox_146_PSK'
     | 'firefox_147'
-    | 'firefox_147_PSK';
+    | 'firefox_147_PSK'
+    | 'firefox_148';
 
 export type OperaProfile = 'opera_89' | 'opera_90' | 'opera_91';
 
@@ -107,6 +111,7 @@ export type CustomClientProfile =
 
 export type ClientProfile =
     | ChromeProfile
+    | BraveProfile
     | SafariProfile
     | SafariIOSProfile
     | SafariIpadOSProfile
@@ -234,11 +239,11 @@ export interface CustomTLSClient {
     /** Connection flow identifier */
     connectionFlow?: number;
     /** HTTP/2 settings map */
-    h2Settings?: Record<H2SettingsKey, number>;
+    h2Settings?: Partial<Record<H2SettingsKey, number>>;
     /** Array of H2Settings keys in order */
     h2SettingsOrder?: H2SettingsKey[];
     /** HTTP/3 settings map */
-    h3Settings?: Record<H3SettingsKey, number>;
+    h3Settings?: Partial<Record<H3SettingsKey, number>>;
     /** Array of H3Settings keys in order */
     h3SettingsOrder?: H3SettingsKey[];
     /** Pseudo header order for HTTP/3 requests */
@@ -293,13 +298,13 @@ export interface TransportOptions {
     maxIdleConnsPerHost?: number;
     /** Maximum number of connections per host */
     maxConnsPerHost?: number;
-    /** Maximum number of response header bytes */
+    /** Maximum number of response header bytes. If zero, a default is used */
     maxResponseHeaderBytes?: number;
-    /** Write buffer size */
+    /** Write buffer size. If zero, a default (currently 4KB) is used */
     writeBufferSize?: number;
-    /** Read buffer size */
+    /** Read buffer size. If zero, a default (currently 4KB) is used */
     readBufferSize?: number;
-    /** Idle connection timeout */
+    /** Maximum time an idle (keep-alive) connection remains idle before closing itself, in nanoseconds. Zero means no limit */
     idleConnTimeout?: number;
 }
 
@@ -308,15 +313,15 @@ export interface TransportOptions {
  */
 export interface Cookie {
     /** The domain of the cookie */
-    domain: string;
+    domain?: string;
     /** The expiration time of the cookie (Unix timestamp) */
-    expires: number;
+    expires?: number;
     /** Number of seconds the cookie is valid. If both expires and maxAge are set, maxAge has precedence */
     maxAge?: number;
     /** The name of the cookie */
     name: string;
     /** The path of the cookie */
-    path: string;
+    path?: string;
     /** The value of the cookie */
     value: string;
     /** Whether the cookie should only be sent over HTTPS */
@@ -333,7 +338,7 @@ export interface TlsClientDefaultOptions {
     tlsClientIdentifier?: ClientProfile;
     /** If true, wrapper will retry the request based on retryStatusCodes (default: true) */
     retryIsEnabled?: boolean;
-    /** Maximum number of retries (default: 3) */
+    /** Maximum number of total attempts per request, including the first one (default: 3) */
     retryMaxCount?: number;
     /** Status codes for retries (default: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524]) */
     retryStatusCodes?: number[];
@@ -345,13 +350,13 @@ export interface TlsClientDefaultOptions {
     customTlsClient?: CustomTLSClient | null;
     /** Transport options */
     transportOptions?: TransportOptions | null;
-    /** If true, redirects will be followed (default: false) */
+    /** If true, redirects will be followed (default: false). Can be changed within a session */
     followRedirects?: boolean;
     /** If true, HTTP/1 will be forced (default: false) */
     forceHttp1?: boolean;
     /** If true, HTTP/3 will be disabled (default: false) */
     disableHttp3?: boolean;
-    /** If true, races HTTP/3 (QUIC) and HTTP/2 (TCP) connections in parallel (default: false) */
+    /** If true, races HTTP/3 (QUIC) and HTTP/2 (TCP) connections in parallel, similar to Chrome's "Happy Eyeballs" approach (default: false). Cannot be used together with forceHttp1 or disableHttp3 */
     withProtocolRacing?: boolean;
     /** Order of headers */
     headerOrder?: string[];
@@ -359,15 +364,15 @@ export interface TlsClientDefaultOptions {
     defaultHeaders?: Record<string, string> | null;
     /** Headers to be used during the CONNECT request */
     connectHeaders?: Record<string, string[]> | null;
-    /** If true, insecure verification will be skipped (default: false) */
+    /** If true, certificate verification will be skipped (default: false). Cannot be changed during a session */
     insecureSkipVerify?: boolean;
-    /** If true, the request is a byte request (default: false) */
+    /** If true, the request body must be a base64 encoded string, e.g. for uploading images (default: false) */
     isByteRequest?: boolean;
-    /** If true, the response is a byte response (default: false) */
+    /** If true, the response body will be a base64 encoded string, e.g. for downloading images (default: false) */
     isByteResponse?: boolean;
     /** If true, the proxy is rotating (default: false) */
     isRotatingProxy?: boolean;
-    /** URL of the proxy. Example: http://user:password@ip:port */
+    /** URL of the proxy. Example: http://user:password@ip:port. Can be changed within a session */
     proxyUrl?: string | null;
     /** Default cookies for requests */
     defaultCookies?: Cookie[] | null;
@@ -387,9 +392,9 @@ export interface TlsClientDefaultOptions {
     streamOutputEOFSymbol?: string | null;
     /** Path of the stream output */
     streamOutputPath?: string | null;
-    /** Timeout in milliseconds (default: 0) */
+    /** Timeout in milliseconds, takes precedence over timeoutSeconds when set (default: 0) */
     timeoutMilliseconds?: number;
-    /** Timeout in seconds (default: 60) */
+    /** Timeout in seconds (default: 60). Cannot be changed during a session */
     timeoutSeconds?: number;
     /** If true, debug mode is enabled (default: false) */
     withDebug?: boolean;
@@ -399,7 +404,7 @@ export interface TlsClientDefaultOptions {
     withoutCookieJar?: boolean;
     /** If true, the order of TLS extensions is randomized (default: true) */
     withRandomTLSExtensionOrder?: boolean;
-    /** If true, the response body will be decoded using EUC-KR encoding (default: false) */
+    /** @deprecated Not part of the tls-client payload and ignored; response charset is auto-detected since tls-client 1.15.0 */
     euckrResponse?: boolean;
     /** Custom path to download the TLS library */
     customLibraryDownloadPath?: string | null;
@@ -429,19 +434,19 @@ export interface TlsClientOptions extends Omit<TlsClientDefaultOptions, 'default
  */
 export interface TlsClientResponse {
     /** The reusable sessionId if provided on the request */
-    sessionId: string;
-    /** The status code of the response */
+    sessionId?: string;
+    /** The status code of the response, or 0 in case of an unexpected error */
     status: number;
     /** The target URL of the request */
     target: string;
-    /** The response body as a string, or the error message */
+    /** The response body as a string (base64 encoded if isByteResponse is set), or the error message */
     body: string;
-    /** The headers of the response */
-    headers: Record<string, string>;
-    /** The cookies of the response */
-    cookies: Record<string, Cookie>;
+    /** The headers of the response, each header name mapping to its list of values */
+    headers: Record<string, string[]>;
+    /** The cookies of the response as name-value pairs */
+    cookies: Record<string, string>;
     /** The protocol used for the request (e.g. "h2", "HTTP/2.0", "HTTP/1.1") */
-    usedProtocol?: string;
+    usedProtocol: string;
     /** The number of retries */
     retryCount: number;
 }
@@ -454,6 +459,84 @@ export interface CookieResponse {
     cookies: Cookie[] | null;
 }
 
+const DEFAULT_OPTIONS: TlsClientDefaultOptions = {
+    tlsClientIdentifier: 'chrome_146',
+    catchPanics: false,
+    certificatePinningHosts: null,
+    customTlsClient: null,
+    customLibraryDownloadPath: null,
+    transportOptions: null,
+    followRedirects: false,
+    forceHttp1: false,
+    disableHttp3: false,
+    withProtocolRacing: false,
+    headerOrder: [
+        'host',
+        'user-agent',
+        'accept',
+        'accept-language',
+        'accept-encoding',
+        'connection',
+        'upgrade-insecure-requests',
+        'if-modified-since',
+        'cache-control',
+        'dnt',
+        'content-length',
+        'content-type',
+        'range',
+        'authorization',
+        'x-real-ip',
+        'x-forwarded-for',
+        'x-requested-with',
+        'x-csrf-token',
+        'x-request-id',
+        'sec-ch-ua',
+        'sec-ch-ua-mobile',
+        'sec-ch-ua-platform',
+        'sec-fetch-dest',
+        'sec-fetch-mode',
+        'sec-fetch-site',
+        'origin',
+        'referer',
+        'pragma',
+        'max-forwards',
+        'x-http-method-override',
+        'if-unmodified-since',
+        'if-none-match',
+        'if-match',
+        'if-range',
+        'accept-datetime',
+    ],
+    defaultHeaders: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
+    },
+    connectHeaders: null,
+    insecureSkipVerify: false,
+    isByteRequest: false,
+    isByteResponse: false,
+    isRotatingProxy: false,
+    proxyUrl: null,
+    defaultCookies: null,
+    requestHostOverride: null,
+    disableIPV6: false,
+    disableIPV4: false,
+    localAddress: null,
+    serverNameOverwrite: '',
+    streamOutputBlockSize: null,
+    streamOutputEOFSymbol: null,
+    streamOutputPath: null,
+    timeoutMilliseconds: 0,
+    timeoutSeconds: 60,
+    withDebug: false,
+    withCustomCookieJar: false,
+    withoutCookieJar: false,
+    withRandomTLSExtensionOrder: true,
+    retryIsEnabled: true,
+    retryMaxCount: 3,
+    retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
+};
+
 /**
  * SessionClient class for managing TLS client sessions
  */
@@ -461,7 +544,6 @@ export class SessionClient {
     public defaultOptions: TlsClientDefaultOptions;
     private readonly sessionId: string;
     private readonly moduleClient: ModuleClient;
-    private pool: Piscina | null = null;
     private destroyed = false;
 
     /**
@@ -480,96 +562,22 @@ export class SessionClient {
             throw new Error('ModuleClient must be an instance of ModuleClient');
         }
 
+        // Copy nested mutables so one session's edits never bleed into another
         this.defaultOptions = {
-            tlsClientIdentifier: 'chrome_146',
-            catchPanics: false,
-            certificatePinningHosts: null,
-            customTlsClient: null,
-            customLibraryDownloadPath: null,
-            transportOptions: null,
-            followRedirects: false,
-            forceHttp1: false,
-            disableHttp3: false,
-            withProtocolRacing: false,
-            headerOrder: [
-                'host',
-                'user-agent',
-                'accept',
-                'accept-language',
-                'accept-encoding',
-                'connection',
-                'upgrade-insecure-requests',
-                'if-modified-since',
-                'cache-control',
-                'dnt',
-                'content-length',
-                'content-type',
-                'range',
-                'authorization',
-                'x-real-ip',
-                'x-forwarded-for',
-                'x-requested-with',
-                'x-csrf-token',
-                'x-request-id',
-                'sec-ch-ua',
-                'sec-ch-ua-mobile',
-                'sec-ch-ua-platform',
-                'sec-fetch-dest',
-                'sec-fetch-mode',
-                'sec-fetch-site',
-                'origin',
-                'referer',
-                'pragma',
-                'max-forwards',
-                'x-http-method-override',
-                'if-unmodified-since',
-                'if-none-match',
-                'if-match',
-                'if-range',
-                'accept-datetime',
-            ],
-            defaultHeaders: {
-                'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
-            },
-            connectHeaders: null,
-            insecureSkipVerify: false,
-            isByteRequest: false,
-            isByteResponse: false,
-            isRotatingProxy: false,
-            proxyUrl: null,
-            defaultCookies: null,
-            requestHostOverride: null,
-            disableIPV6: false,
-            disableIPV4: false,
-            localAddress: null,
-            serverNameOverwrite: '',
-            streamOutputBlockSize: null,
-            streamOutputEOFSymbol: null,
-            streamOutputPath: null,
-            timeoutMilliseconds: 0,
-            timeoutSeconds: 60,
-            withDebug: false,
-            withCustomCookieJar: false,
-            withoutCookieJar: false,
-            withRandomTLSExtensionOrder: true,
-            euckrResponse: false,
-            retryIsEnabled: true,
-            retryMaxCount: 3,
-            retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
+            ...DEFAULT_OPTIONS,
+            headerOrder: [...(DEFAULT_OPTIONS.headerOrder ?? [])],
+            defaultHeaders: { ...DEFAULT_OPTIONS.defaultHeaders },
+            retryStatusCodes: [...(DEFAULT_OPTIONS.retryStatusCodes ?? [])],
             ...options,
         };
 
         this.sessionId = crypto.randomUUID();
         this.moduleClient = moduleClient;
-        sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
-    }
-
-    private async init(): Promise<void> {
-        if (!this.pool) {
-            await this.moduleClient.open();
-            this.pool = this.moduleClient.pool;
-        }
+        sessionFinalizationRegistry.register(
+            this,
+            { sessionId: this.sessionId, moduleClient: this.moduleClient },
+            this,
+        );
     }
 
     /**
@@ -634,8 +642,8 @@ export class SessionClient {
     }
 
     /**
-     * @description Gets the session ID if session rotation is not enabled.
-     * @returns {string} The session ID, or null if session rotation is enabled.
+     * @description Gets the session ID.
+     * @returns {string} The session ID.
      */
     public getSession(): string {
         return this.sessionId;
@@ -647,31 +655,45 @@ export class SessionClient {
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
     public async destroySession(id: string = this.sessionId): Promise<unknown> {
-        if (this.destroyed) {
+        const isOwn = id === this.sessionId;
+        if (isOwn && this.destroyed) {
             return undefined;
         }
-        sessionFinalizationRegistry.unregister(this);
+        if (isOwn) sessionFinalizationRegistry.unregister(this);
         try {
-            await this.init();
-            const result = await this.exec('destroySession', [id]);
-            this.destroyed = true;
+            const result = await this.exec('destroySession', [JSON.stringify({ sessionId: id })]);
+            if (isOwn) this.destroyed = true;
             return result;
         } catch (error) {
-            sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
+            if (isOwn) {
+                sessionFinalizationRegistry.register(
+                    this,
+                    { sessionId: this.sessionId, moduleClient: this.moduleClient },
+                    this,
+                );
+            }
             throw error;
         }
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
+        // Strip wrapper-only options that are not part of the Go request payload
         const {
             retryIsEnabled: _retryIsEnabled,
             retryMaxCount: _retryMaxCount,
             retryStatusCodes: _retryStatusCodes,
             customLibraryDownloadPath: _customLibraryDownloadPath,
+            euckrResponse: _euckrResponse,
             ...goOptions
         } = options;
 
-        return (await this.exec('request', [JSON.stringify(goOptions)])) as TlsClientResponse;
+        const response = (await this.exec('request', [JSON.stringify(goOptions)])) as TlsClientResponse;
+
+        // Go marshals nil maps as null on error responses (status 0)
+        response.headers ??= {};
+        response.cookies ??= {};
+
+        return response;
     }
 
     private async retryRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
@@ -691,12 +713,23 @@ export class SessionClient {
     }
 
     private async request(options: Partial<TlsClientOptions>): Promise<TlsClientResponse> {
-        await this.init();
+        return await this.retryRequest(this.combineOptions(options));
+    }
 
-        const combinedOptions = this.combineOptions(options);
-        const request = await this.retryRequest(combinedOptions);
-
-        return request;
+    private async send(
+        method: string,
+        url: URL | string,
+        body: RequestBody,
+        options: Partial<TlsClientOptions>,
+    ): Promise<TlsClientResponse> {
+        return await this.request({
+            sessionId: this.sessionId,
+            requestUrl: this.convertUrl(url),
+            requestMethod: method,
+            requestBody: this.convertBody(body),
+            requestCookies: [],
+            ...options,
+        });
     }
 
     /**
@@ -706,14 +739,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async get(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'GET',
-            requestBody: null,
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('GET', url, null, options);
     }
 
     /**
@@ -728,14 +754,7 @@ export class SessionClient {
         body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'POST',
-            requestBody: this.convertBody(body),
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('POST', url, body, options);
     }
 
     /**
@@ -750,14 +769,7 @@ export class SessionClient {
         body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'PUT',
-            requestBody: this.convertBody(body),
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('PUT', url, body, options);
     }
 
     /**
@@ -767,14 +779,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async delete(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'DELETE',
-            requestBody: null,
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('DELETE', url, null, options);
     }
 
     /**
@@ -784,14 +789,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async head(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'HEAD',
-            requestBody: null,
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('HEAD', url, null, options);
     }
 
     /**
@@ -806,14 +804,7 @@ export class SessionClient {
         body: RequestBody = null,
         options: Partial<TlsClientOptions> = {},
     ): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'PATCH',
-            requestBody: this.convertBody(body),
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('PATCH', url, body, options);
     }
 
     /**
@@ -823,14 +814,7 @@ export class SessionClient {
      * @returns {Promise<TlsClientResponse>} The response from the server
      */
     public async options(url: URL | string, options: Partial<TlsClientOptions> = {}): Promise<TlsClientResponse> {
-        return await this.request({
-            sessionId: this.sessionId,
-            requestUrl: this.convertUrl(url),
-            requestMethod: 'OPTIONS',
-            requestBody: null,
-            requestCookies: [],
-            ...options,
-        });
+        return await this.send('OPTIONS', url, null, options);
     }
 
     /**
@@ -841,7 +825,6 @@ export class SessionClient {
      */
     public async getCookiesFromSession(sessionId: string, url: string): Promise<CookieResponse> {
         if (!sessionId || !url) throw new Error('Missing sessionId or url parameter');
-        await this.init();
 
         return (await this.exec('getCookiesFromSession', [JSON.stringify({ sessionId, url })])) as CookieResponse;
     }
@@ -856,7 +839,6 @@ export class SessionClient {
      */
     public async addCookiesToSession(sessionId: string, url: string, cookies: Cookie[]): Promise<CookieResponse> {
         if (!sessionId || !url || !cookies) throw new Error('Missing sessionId, url or cookies parameter');
-        await this.init();
 
         return (await this.exec('addCookiesToSession', [
             JSON.stringify({ sessionId, url, cookies }),
@@ -875,13 +857,14 @@ export class SessionClient {
         if (this.destroyed && func !== 'destroySession') {
             throw new Error('SessionClient has been destroyed');
         }
-        await this.init();
+        await this.moduleClient.open();
 
-        if (!this.pool) {
+        const pool = this.moduleClient.pool;
+        if (!pool) {
             throw new Error('Worker pool not initialized');
         }
 
-        return (await this.pool.run({
+        return (await pool.run({
             fn: func,
             args,
         })) as unknown;
