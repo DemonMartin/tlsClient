@@ -687,7 +687,13 @@ export class SessionClient {
             ...goOptions
         } = options;
 
-        return (await this.exec('request', [JSON.stringify(goOptions)])) as TlsClientResponse;
+        const response = (await this.exec('request', [JSON.stringify(goOptions)])) as TlsClientResponse;
+
+        // Go marshals nil maps as null on error responses (status 0)
+        response.headers ??= {};
+        response.cookies ??= {};
+
+        return response;
     }
 
     private async retryRequest(options: TlsClientOptions): Promise<TlsClientResponse> {

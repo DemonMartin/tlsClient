@@ -13,11 +13,11 @@ const lib = koffi.load((workerData as { libraryPath: string }).libraryPath);
 
 const freeMemory: TlsClientFunction = lib.func('freeMemory', 'void', ['string']);
 
+// freeMemory is intentionally not dispatchable by name; the handler frees responses itself
 const functions: Record<string, TlsClientFunction> = {
     request: lib.func('request', 'string', ['string']),
     getCookiesFromSession: lib.func('getCookiesFromSession', 'string', ['string']),
     addCookiesToSession: lib.func('addCookiesToSession', 'string', ['string']),
-    freeMemory,
     destroyAll: lib.func('destroyAll', 'string', []),
     destroySession: lib.func('destroySession', 'string', ['string']),
 };

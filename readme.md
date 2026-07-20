@@ -20,6 +20,8 @@ npm install tlsclientwrapper
 pnpm add tlsclientwrapper
 ```
 
+> pnpm blocks dependency build scripts by default. If koffi's native binding is missing after install, run `pnpm approve-builds` and allow `koffi`.
+
 ## Core Concepts
 
 ### Architecture Overview

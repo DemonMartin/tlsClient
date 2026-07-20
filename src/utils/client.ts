@@ -168,19 +168,23 @@ class ModuleClient {
      * @returns {Promise<boolean>} True if the termination was successful, false otherwise.
      */
     async terminate(): Promise<boolean> {
-        try {
-            if (this.pool) {
-                await this.pool.run({ fn: 'destroyAll', args: [] });
-                await this.pool.destroy();
-                this.pool = null;
-            }
+        // Wait for an in-flight open() so a pending initialization cannot resurrect the pool
+        if (this.opening) {
+            await this.opening.catch(() => undefined);
+        }
 
+        const pool = this.pool;
+        this.pool = null;
+        this.opening = null;
+        if (!pool) return true;
+
+        try {
+            await pool.run({ fn: 'destroyAll', args: [] });
+            await pool.destroy();
             return true;
         } catch (error) {
             console.error('Error during ModuleClient termination:', error);
             return false;
-        } finally {
-            this.opening = null;
         }
     }
 }
