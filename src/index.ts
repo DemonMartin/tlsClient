@@ -5,9 +5,11 @@ import crypto from 'node:crypto';
 const sessionFinalizationRegistry = new FinalizationRegistry(
     (held: { sessionId: string; moduleClient: ModuleClient }) => {
         if (!held.moduleClient.pool) return;
-        void held.moduleClient.pool.run({ fn: 'destroySession', args: [held.sessionId] }).catch(() => {
-            /* ignore: GC-time cleanup */
-        });
+        void held.moduleClient.pool
+            .run({ fn: 'destroySession', args: [JSON.stringify({ sessionId: held.sessionId })] })
+            .catch(() => {
+                /* ignore: GC-time cleanup */
+            });
     },
 );
 
@@ -653,13 +655,13 @@ export class SessionClient {
      * @returns {Promise<unknown>} Promise that resolves when the session is destroyed
      */
     public async destroySession(id: string = this.sessionId): Promise<unknown> {
-        if (this.destroyed) {
+        const isOwn = id === this.sessionId;
+        if (isOwn && this.destroyed) {
             return undefined;
         }
-        const isOwn = id === this.sessionId;
         if (isOwn) sessionFinalizationRegistry.unregister(this);
         try {
-            const result = await this.exec('destroySession', [id]);
+            const result = await this.exec('destroySession', [JSON.stringify({ sessionId: id })]);
             if (isOwn) this.destroyed = true;
             return result;
         } catch (error) {

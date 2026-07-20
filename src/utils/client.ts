@@ -104,7 +104,7 @@ class ModuleClient {
         }
 
         // Write to a temp file and rename so an interrupted download never leaves a truncated library
-        const tempPath = `${this.TLS_LIB_PATH}.${process.pid}.tmp`;
+        const tempPath = `${this.TLS_LIB_PATH}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
         await writeFile(tempPath, Buffer.from(await response.arrayBuffer()));
         await rename(tempPath, this.TLS_LIB_PATH);
         console.log('[tlsClient] Successfully downloaded TLS library');
