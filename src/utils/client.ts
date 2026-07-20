@@ -47,6 +47,7 @@ class ModuleClient {
     private readonly maxThreads: number;
 
     public pool: Piscina | null = null;
+    private opening: Promise<void> | null = null;
 
     /**
      * @description Creates a new ModuleClient instance.
@@ -108,8 +109,17 @@ class ModuleClient {
      * @returns {Promise<void>} Promise that resolves when the library is opened and pool is initialized
      */
     async open(): Promise<void> {
-        if (this.pool) return; // Prevent repeated initializations
+        // Memoize the in-flight initialization so concurrent callers share one pool
+        this.opening ??= this.initialize();
+        try {
+            await this.opening;
+        } catch (error) {
+            this.opening = null;
+            throw error;
+        }
+    }
 
+    private async initialize(): Promise<void> {
         if (isMainThread) {
             await this.downloadLibrary();
         }
@@ -164,6 +174,8 @@ class ModuleClient {
         } catch (error) {
             console.error('Error during ModuleClient termination:', error);
             return false;
+        } finally {
+            this.opening = null;
         }
     }
 }

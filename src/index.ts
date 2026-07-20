@@ -1,6 +1,5 @@
 import ModuleClient from './utils/client.js';
 import crypto from 'node:crypto';
-import type { Piscina } from 'piscina';
 
 /** Best-effort Go session cleanup when a SessionClient is GC'd without destroySession() */
 const sessionFinalizationRegistry = new FinalizationRegistry(
@@ -461,7 +460,6 @@ export class SessionClient {
     public defaultOptions: TlsClientDefaultOptions;
     private readonly sessionId: string;
     private readonly moduleClient: ModuleClient;
-    private pool: Piscina | null = null;
     private destroyed = false;
 
     /**
@@ -562,14 +560,15 @@ export class SessionClient {
 
         this.sessionId = crypto.randomUUID();
         this.moduleClient = moduleClient;
-        sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
+        sessionFinalizationRegistry.register(
+            this,
+            { sessionId: this.sessionId, moduleClient: this.moduleClient },
+            this,
+        );
     }
 
     private async init(): Promise<void> {
-        if (!this.pool) {
-            await this.moduleClient.open();
-            this.pool = this.moduleClient.pool;
-        }
+        await this.moduleClient.open();
     }
 
     /**
@@ -650,14 +649,20 @@ export class SessionClient {
         if (this.destroyed) {
             return undefined;
         }
-        sessionFinalizationRegistry.unregister(this);
+        const isOwn = id === this.sessionId;
+        if (isOwn) sessionFinalizationRegistry.unregister(this);
         try {
-            await this.init();
             const result = await this.exec('destroySession', [id]);
-            this.destroyed = true;
+            if (isOwn) this.destroyed = true;
             return result;
         } catch (error) {
-            sessionFinalizationRegistry.register(this, { sessionId: this.sessionId, moduleClient: this.moduleClient });
+            if (isOwn) {
+                sessionFinalizationRegistry.register(
+                    this,
+                    { sessionId: this.sessionId, moduleClient: this.moduleClient },
+                    this,
+                );
+            }
             throw error;
         }
     }
@@ -877,11 +882,12 @@ export class SessionClient {
         }
         await this.init();
 
-        if (!this.pool) {
+        const pool = this.moduleClient.pool;
+        if (!pool) {
             throw new Error('Worker pool not initialized');
         }
 
-        return (await this.pool.run({
+        return (await pool.run({
             fn: func,
             args,
         })) as unknown;
