@@ -44,6 +44,8 @@ export type ChromeProfile =
     | 'chrome_146'
     | 'chrome_146_PSK';
 
+export type BraveProfile = 'brave_146' | 'brave_146_PSK';
+
 export type SafariProfile = 'safari_15_6_1' | 'safari_16_0';
 
 export type SafariIOSProfile =
@@ -72,7 +74,8 @@ export type FirefoxProfile =
     | 'firefox_135'
     | 'firefox_146_PSK'
     | 'firefox_147'
-    | 'firefox_147_PSK';
+    | 'firefox_147_PSK'
+    | 'firefox_148';
 
 export type OperaProfile = 'opera_89' | 'opera_90' | 'opera_91';
 
@@ -106,6 +109,7 @@ export type CustomClientProfile =
 
 export type ClientProfile =
     | ChromeProfile
+    | BraveProfile
     | SafariProfile
     | SafariIOSProfile
     | SafariIpadOSProfile
@@ -233,11 +237,11 @@ export interface CustomTLSClient {
     /** Connection flow identifier */
     connectionFlow?: number;
     /** HTTP/2 settings map */
-    h2Settings?: Record<H2SettingsKey, number>;
+    h2Settings?: Partial<Record<H2SettingsKey, number>>;
     /** Array of H2Settings keys in order */
     h2SettingsOrder?: H2SettingsKey[];
     /** HTTP/3 settings map */
-    h3Settings?: Record<H3SettingsKey, number>;
+    h3Settings?: Partial<Record<H3SettingsKey, number>>;
     /** Array of H3Settings keys in order */
     h3SettingsOrder?: H3SettingsKey[];
     /** Pseudo header order for HTTP/3 requests */
@@ -292,13 +296,13 @@ export interface TransportOptions {
     maxIdleConnsPerHost?: number;
     /** Maximum number of connections per host */
     maxConnsPerHost?: number;
-    /** Maximum number of response header bytes */
+    /** Maximum number of response header bytes. If zero, a default is used */
     maxResponseHeaderBytes?: number;
-    /** Write buffer size */
+    /** Write buffer size. If zero, a default (currently 4KB) is used */
     writeBufferSize?: number;
-    /** Read buffer size */
+    /** Read buffer size. If zero, a default (currently 4KB) is used */
     readBufferSize?: number;
-    /** Idle connection timeout */
+    /** Maximum time an idle (keep-alive) connection remains idle before closing itself, in nanoseconds. Zero means no limit */
     idleConnTimeout?: number;
 }
 
@@ -307,15 +311,15 @@ export interface TransportOptions {
  */
 export interface Cookie {
     /** The domain of the cookie */
-    domain: string;
+    domain?: string;
     /** The expiration time of the cookie (Unix timestamp) */
-    expires: number;
+    expires?: number;
     /** Number of seconds the cookie is valid. If both expires and maxAge are set, maxAge has precedence */
     maxAge?: number;
     /** The name of the cookie */
     name: string;
     /** The path of the cookie */
-    path: string;
+    path?: string;
     /** The value of the cookie */
     value: string;
     /** Whether the cookie should only be sent over HTTPS */
@@ -344,13 +348,13 @@ export interface TlsClientDefaultOptions {
     customTlsClient?: CustomTLSClient | null;
     /** Transport options */
     transportOptions?: TransportOptions | null;
-    /** If true, redirects will be followed (default: false) */
+    /** If true, redirects will be followed (default: false). Can be changed within a session */
     followRedirects?: boolean;
     /** If true, HTTP/1 will be forced (default: false) */
     forceHttp1?: boolean;
     /** If true, HTTP/3 will be disabled (default: false) */
     disableHttp3?: boolean;
-    /** If true, races HTTP/3 (QUIC) and HTTP/2 (TCP) connections in parallel (default: false) */
+    /** If true, races HTTP/3 (QUIC) and HTTP/2 (TCP) connections in parallel, similar to Chrome's "Happy Eyeballs" approach (default: false). Cannot be used together with forceHttp1 or disableHttp3 */
     withProtocolRacing?: boolean;
     /** Order of headers */
     headerOrder?: string[];
@@ -358,15 +362,15 @@ export interface TlsClientDefaultOptions {
     defaultHeaders?: Record<string, string> | null;
     /** Headers to be used during the CONNECT request */
     connectHeaders?: Record<string, string[]> | null;
-    /** If true, insecure verification will be skipped (default: false) */
+    /** If true, certificate verification will be skipped (default: false). Cannot be changed during a session */
     insecureSkipVerify?: boolean;
-    /** If true, the request is a byte request (default: false) */
+    /** If true, the request body must be a base64 encoded string, e.g. for uploading images (default: false) */
     isByteRequest?: boolean;
-    /** If true, the response is a byte response (default: false) */
+    /** If true, the response body will be a base64 encoded string, e.g. for downloading images (default: false) */
     isByteResponse?: boolean;
     /** If true, the proxy is rotating (default: false) */
     isRotatingProxy?: boolean;
-    /** URL of the proxy. Example: http://user:password@ip:port */
+    /** URL of the proxy. Example: http://user:password@ip:port. Can be changed within a session */
     proxyUrl?: string | null;
     /** Default cookies for requests */
     defaultCookies?: Cookie[] | null;
@@ -386,9 +390,9 @@ export interface TlsClientDefaultOptions {
     streamOutputEOFSymbol?: string | null;
     /** Path of the stream output */
     streamOutputPath?: string | null;
-    /** Timeout in milliseconds (default: 0) */
+    /** Timeout in milliseconds, takes precedence over timeoutSeconds when set (default: 0) */
     timeoutMilliseconds?: number;
-    /** Timeout in seconds (default: 60) */
+    /** Timeout in seconds (default: 60). Cannot be changed during a session */
     timeoutSeconds?: number;
     /** If true, debug mode is enabled (default: false) */
     withDebug?: boolean;
@@ -398,7 +402,7 @@ export interface TlsClientDefaultOptions {
     withoutCookieJar?: boolean;
     /** If true, the order of TLS extensions is randomized (default: true) */
     withRandomTLSExtensionOrder?: boolean;
-    /** If true, the response body will be decoded using EUC-KR encoding (default: false) */
+    /** @deprecated Not part of the tls-client payload and ignored; response charset is auto-detected since tls-client 1.15.0 */
     euckrResponse?: boolean;
     /** Custom path to download the TLS library */
     customLibraryDownloadPath?: string | null;
@@ -428,19 +432,19 @@ export interface TlsClientOptions extends Omit<TlsClientDefaultOptions, 'default
  */
 export interface TlsClientResponse {
     /** The reusable sessionId if provided on the request */
-    sessionId: string;
-    /** The status code of the response */
+    sessionId?: string;
+    /** The status code of the response, or 0 in case of an unexpected error */
     status: number;
     /** The target URL of the request */
     target: string;
-    /** The response body as a string, or the error message */
+    /** The response body as a string (base64 encoded if isByteResponse is set), or the error message */
     body: string;
-    /** The headers of the response */
-    headers: Record<string, string>;
-    /** The cookies of the response */
-    cookies: Record<string, Cookie>;
+    /** The headers of the response, each header name mapping to its list of values */
+    headers: Record<string, string[]>;
+    /** The cookies of the response as name-value pairs */
+    cookies: Record<string, string>;
     /** The protocol used for the request (e.g. "h2", "HTTP/2.0", "HTTP/1.1") */
-    usedProtocol?: string;
+    usedProtocol: string;
     /** The number of retries */
     retryCount: number;
 }
@@ -526,7 +530,6 @@ const DEFAULT_OPTIONS: TlsClientDefaultOptions = {
     withCustomCookieJar: false,
     withoutCookieJar: false,
     withRandomTLSExtensionOrder: true,
-    euckrResponse: false,
     retryIsEnabled: true,
     retryMaxCount: 3,
     retryStatusCodes: [408, 429, 500, 502, 503, 504, 521, 522, 523, 524],
@@ -672,11 +675,13 @@ export class SessionClient {
     }
 
     private async sendRequest(options: TlsClientOptions): Promise<TlsClientResponse> {
+        // Strip wrapper-only options that are not part of the Go request payload
         const {
             retryIsEnabled: _retryIsEnabled,
             retryMaxCount: _retryMaxCount,
             retryStatusCodes: _retryStatusCodes,
             customLibraryDownloadPath: _customLibraryDownloadPath,
+            euckrResponse: _euckrResponse,
             ...goOptions
         } = options;
 
