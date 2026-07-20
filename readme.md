@@ -162,7 +162,7 @@ For detailed API documentation and type information, explore the source code or 
 
 This wrapper requires:
 
-- Node.js 18.x or later
+- Node.js 20.x or later
 - Platform supported by Koffi (Windows, macOS, Linux)
 - x64, arm64, or compatible architecture
 
