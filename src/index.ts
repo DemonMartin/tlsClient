@@ -566,9 +566,12 @@ export class SessionClient {
         this.defaultOptions = {
             ...DEFAULT_OPTIONS,
             headerOrder: [...(DEFAULT_OPTIONS.headerOrder ?? [])],
-            defaultHeaders: { ...DEFAULT_OPTIONS.defaultHeaders },
             retryStatusCodes: [...(DEFAULT_OPTIONS.retryStatusCodes ?? [])],
             ...options,
+            defaultHeaders:
+                options.defaultHeaders === null
+                    ? null
+                    : { ...DEFAULT_OPTIONS.defaultHeaders, ...options.defaultHeaders },
         };
 
         this.sessionId = crypto.randomUUID();
