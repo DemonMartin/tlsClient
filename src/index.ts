@@ -508,7 +508,7 @@ const DEFAULT_OPTIONS: TlsClientDefaultOptions = {
         'accept-datetime',
     ],
     defaultHeaders: {
-        'User-Agent':
+        'user-agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
     },
     connectHeaders: null,
@@ -560,6 +560,15 @@ export class SessionClient {
 
         if (!(moduleClient instanceof ModuleClient)) {
             throw new Error('ModuleClient must be an instance of ModuleClient');
+        }
+
+        const allHeaders = [...Object.keys(options.defaultHeaders ?? {}), ...Object.keys(options.connectHeaders ?? {})]
+        if (options.forceHttp1 !== true) {
+            for (const header of allHeaders) {
+                if (header !== header.toLowerCase()) {
+                    throw new Error(`HTTP/2 header must be lowercase for fingerprint consistency: ${header}`);
+                }
+            }
         }
 
         // Copy nested mutables so one session's edits never bleed into another
